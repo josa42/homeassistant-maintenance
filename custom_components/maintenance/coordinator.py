@@ -40,6 +40,7 @@ from .const import (
     CRITERION_ENTITY_USAGE_COUNT,
     CRITERION_RECURRING_DATE,
     CRITERION_TEMPLATE_BOOLEAN,
+    CRITERION_TEMPLATE_NUMERIC,
     CRITERION_TIME_ELAPSED,
     DEFAULT_FROM_STATE,
     DEFAULT_INTERVAL_UNIT,
@@ -585,6 +586,32 @@ class TemplateBooleanCoordinator(_TemplateCoordinatorBase):
         )
 
 
+class TemplateNumericCoordinator(_TemplateCoordinatorBase):
+    """Template rendering a number, compared against a fixed threshold."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.threshold: float = float(self.config[CONF_THRESHOLD])
+
+    def _compute(self) -> MaintenanceData:
+        try:
+            counter = float(self._latest_result) if self._latest_result is not None else 0.0
+        except (TypeError, ValueError):
+            counter = 0.0
+        progress = (counter / self.threshold * 100) if self.threshold > 0 else 0.0
+        return MaintenanceData(
+            state=self._state_from_progress(progress),
+            counter=round(counter, 2),
+            counter_unit="",
+            progress=round(progress, 1),
+            threshold=self.threshold,
+            last_done_date=self.persisted.last_done_date,
+            estimated_due_date=None,
+            criterion=CRITERION_TEMPLATE_NUMERIC,
+            warn_threshold_percent=self.warn_threshold_percent,
+        )
+
+
 def build_coordinator(
     hass: HomeAssistant,
     entry_id: str,
@@ -604,4 +631,6 @@ def build_coordinator(
         return RecurringDateCoordinator(hass, entry_id, tracker_id, config, store)
     if criterion == CRITERION_TEMPLATE_BOOLEAN:
         return TemplateBooleanCoordinator(hass, entry_id, tracker_id, config, store)
+    if criterion == CRITERION_TEMPLATE_NUMERIC:
+        return TemplateNumericCoordinator(hass, entry_id, tracker_id, config, store)
     raise ValueError(f"Unknown criterion: {criterion}")

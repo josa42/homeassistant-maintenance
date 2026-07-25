@@ -14,6 +14,7 @@ CRITERION_ENTITY_ON_DURATION: Final = "entity_on_duration"
 CRITERION_ENTITY_USAGE_COUNT: Final = "entity_usage_count"
 CRITERION_RECURRING_DATE: Final = "recurring_date"
 CRITERION_TEMPLATE_BOOLEAN: Final = "template_boolean"
+CRITERION_TEMPLATE_NUMERIC: Final = "template_numeric"
 
 CRITERIA: Final = (
     CRITERION_TIME_ELAPSED,
@@ -21,6 +22,7 @@ CRITERIA: Final = (
     CRITERION_ENTITY_USAGE_COUNT,
     CRITERION_RECURRING_DATE,
     CRITERION_TEMPLATE_BOOLEAN,
+    CRITERION_TEMPLATE_NUMERIC,
 )
 
 # Tracker states

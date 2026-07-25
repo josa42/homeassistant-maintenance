@@ -60,6 +60,17 @@
           "template": "Template",
           "last_done": "Last done (optional)"
         }
+      },
+      "template_numeric": {
+        "title": "Template (numeric)",
+        "description": "Enter a Jinja template that renders a number. Progress is counter / threshold.",
+        "data": {
+          "name": "Name",
+          "template": "Template",
+          "threshold": "Threshold",
+          "warn_threshold_percent": "Warn threshold (%)",
+          "last_done": "Last done (optional)"
+        }
       }
     },
     "abort": {
@@ -81,7 +92,8 @@
         "entity_on_duration": "Entity on-duration",
         "entity_usage_count": "Entity usage count",
         "recurring_date": "Recurring date",
-        "template_boolean": "Template (boolean)"
+        "template_boolean": "Template (boolean)",
+        "template_numeric": "Template (numeric)"
       }
     },
     "duration_unit": {

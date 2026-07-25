@@ -39,6 +39,7 @@ from .const import (
     CRITERION_ENTITY_USAGE_COUNT,
     CRITERION_RECURRING_DATE,
     CRITERION_TEMPLATE_BOOLEAN,
+    CRITERION_TEMPLATE_NUMERIC,
     CRITERION_TIME_ELAPSED,
     DEFAULT_FROM_STATE,
     DEFAULT_INTERVAL_UNIT,
@@ -133,6 +134,17 @@ _CRITERION_SCHEMAS: dict[str, vol.Schema] = {
             vol.Optional(CONF_LAST_DONE): _LAST_DONE_SELECTOR,
         }
     ),
+    CRITERION_TEMPLATE_NUMERIC: vol.Schema(
+        {
+            vol.Required(CONF_NAME): _NAME_SELECTOR,
+            vol.Required(CONF_TEMPLATE): _TEMPLATE_SELECTOR,
+            vol.Required(CONF_THRESHOLD): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, step=0.1, mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Required(CONF_WARN_THRESHOLD_PERCENT, default=DEFAULT_WARN_THRESHOLD_PERCENT): _WARN_SELECTOR,
+            vol.Optional(CONF_LAST_DONE): _LAST_DONE_SELECTOR,
+        }
+    ),
 }
 
 
@@ -165,6 +177,7 @@ class MaintenanceConfigFlow(ConfigFlow, domain=DOMAIN):
                                 CRITERION_ENTITY_USAGE_COUNT,
                                 CRITERION_RECURRING_DATE,
                                 CRITERION_TEMPLATE_BOOLEAN,
+                                CRITERION_TEMPLATE_NUMERIC,
                             ],
                             translation_key="criterion",
                             mode=selector.SelectSelectorMode.DROPDOWN,
@@ -205,6 +218,11 @@ class MaintenanceConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         return await self._async_handle_details(CRITERION_TEMPLATE_BOOLEAN, user_input)
+
+    async def async_step_template_numeric(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        return await self._async_handle_details(CRITERION_TEMPLATE_NUMERIC, user_input)
 
     async def _async_show_details_step(
         self, existing_data: dict[str, Any] | None = None

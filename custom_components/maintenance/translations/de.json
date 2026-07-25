@@ -60,6 +60,17 @@
           "template": "Template",
           "last_done": "Zuletzt erledigt (optional)"
         }
+      },
+      "template_numeric": {
+        "title": "Template (numerisch)",
+        "description": "Gib ein Jinja-Template ein, das eine Zahl liefert. Fortschritt = Zähler / Schwellenwert.",
+        "data": {
+          "name": "Name",
+          "template": "Template",
+          "threshold": "Schwellenwert",
+          "warn_threshold_percent": "Warnschwelle (%)",
+          "last_done": "Zuletzt erledigt (optional)"
+        }
       }
     },
     "abort": {
@@ -81,7 +92,8 @@
         "entity_on_duration": "Einschaltdauer einer Entität",
         "entity_usage_count": "Nutzungsanzahl einer Entität",
         "recurring_date": "Wiederkehrendes Datum",
-        "template_boolean": "Template (Boolean)"
+        "template_boolean": "Template (Boolean)",
+        "template_numeric": "Template (numerisch)"
       }
     },
     "duration_unit": {
