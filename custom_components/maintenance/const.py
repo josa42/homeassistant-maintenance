@@ -8,8 +8,6 @@ DOMAIN: Final = "maintenance"
 
 PLATFORMS: Final = ["sensor", "button"]
 
-SUBENTRY_TYPE_TRACKER: Final = "tracker"
-
 # Criterion identifiers
 CRITERION_TIME_ELAPSED: Final = "time_elapsed"
 CRITERION_ENTITY_ON_DURATION: Final = "entity_on_duration"

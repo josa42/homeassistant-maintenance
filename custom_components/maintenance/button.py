@@ -1,4 +1,4 @@
-"""Mark-done button — one per tracker subentry."""
+"""Mark-done button — one per config entry."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import DOMAIN, SUBENTRY_TYPE_TRACKER
+from .const import DOMAIN
 from .coordinator import MaintenanceCoordinator
 
 
@@ -17,16 +17,9 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Create one mark-done button per tracker subentry."""
-    runtime = entry.runtime_data
-    for subentry_id, subentry in entry.subentries.items():
-        if subentry.subentry_type != SUBENTRY_TYPE_TRACKER:
-            continue
-        coordinator = runtime.coordinators[subentry_id]
-        async_add_entities(
-            [MarkDoneButton(coordinator, subentry.title)],
-            config_subentry_id=subentry_id,
-        )
+    """Create the mark-done button for this tracker."""
+    coordinator = entry.runtime_data.coordinator
+    async_add_entities([MarkDoneButton(coordinator, entry.title)])
 
 
 class MarkDoneButton(ButtonEntity):

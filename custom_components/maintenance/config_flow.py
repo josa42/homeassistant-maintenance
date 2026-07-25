@@ -1,4 +1,7 @@
-"""Config flow for the Maintenance integration."""
+"""Config flow for the Maintenance integration.
+
+Each tracker is its own config entry — the idiomatic pattern for helpers.
+"""
 
 from __future__ import annotations
 
@@ -7,10 +10,10 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant.config_entries import (
+    ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
-    ConfigSubentryFlow,
-    SubentryFlowResult,
+    OptionsFlow,
 )
 from homeassistant.core import callback
 from homeassistant.helpers import selector
@@ -35,7 +38,6 @@ from .const import (
     DEFAULT_TO_STATE,
     DEFAULT_WARN_THRESHOLD_PERCENT,
     DOMAIN,
-    SUBENTRY_TYPE_TRACKER,
 )
 
 _WARN_SELECTOR = selector.NumberSelector(
@@ -88,33 +90,19 @@ _CRITERION_SCHEMAS: dict[str, vol.Schema] = {
 
 
 class MaintenanceConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Parent config flow — single integration entry that owns tracker subentries."""
+    """Create one maintenance tracker per config entry."""
 
     VERSION = 1
 
-    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        await self.async_set_unique_id(DOMAIN)
-        self._abort_if_unique_id_configured()
-        return self.async_create_entry(title="Maintenance", data={})
-
-    @classmethod
-    @callback
-    def async_get_supported_subentry_types(
-        cls, config_entry
-    ) -> dict[str, type[ConfigSubentryFlow]]:
-        return {SUBENTRY_TYPE_TRACKER: TrackerSubentryFlowHandler}
-
-
-class TrackerSubentryFlowHandler(ConfigSubentryFlow):
-    """Add or reconfigure a single maintenance tracker."""
-
     def __init__(self) -> None:
         self._criterion: str | None = None
-        self._existing_data: dict[str, Any] = {}
 
-    async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
-    ) -> SubentryFlowResult:
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
+        return MaintenanceOptionsFlow()
+
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
             self._criterion = user_input[CONF_CRITERION]
             return await self._async_show_details_step()
@@ -136,56 +124,83 @@ class TrackerSubentryFlowHandler(ConfigSubentryFlow):
 
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
-    ) -> SubentryFlowResult:
-        subentry = self._get_reconfigure_subentry()
-        self._existing_data = dict(subentry.data)
-        self._criterion = self._existing_data.get(CONF_CRITERION)
-        return await self._async_show_details_step()
+    ) -> ConfigFlowResult:
+        entry = self._get_reconfigure_entry()
+        self._criterion = entry.data.get(CONF_CRITERION)
+        return await self._async_show_details_step(existing_data=dict(entry.data))
 
     async def async_step_time_elapsed(
         self, user_input: dict[str, Any] | None = None
-    ) -> SubentryFlowResult:
+    ) -> ConfigFlowResult:
         return await self._async_handle_details(CRITERION_TIME_ELAPSED, user_input)
 
     async def async_step_entity_on_duration(
         self, user_input: dict[str, Any] | None = None
-    ) -> SubentryFlowResult:
+    ) -> ConfigFlowResult:
         return await self._async_handle_details(CRITERION_ENTITY_ON_DURATION, user_input)
 
     async def async_step_entity_usage_count(
         self, user_input: dict[str, Any] | None = None
-    ) -> SubentryFlowResult:
+    ) -> ConfigFlowResult:
         return await self._async_handle_details(CRITERION_ENTITY_USAGE_COUNT, user_input)
 
     async def async_step_manual(
         self, user_input: dict[str, Any] | None = None
-    ) -> SubentryFlowResult:
+    ) -> ConfigFlowResult:
         return await self._async_handle_details(CRITERION_MANUAL, user_input)
 
-    async def _async_show_details_step(self) -> SubentryFlowResult:
+    async def _async_show_details_step(
+        self, existing_data: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         assert self._criterion is not None
-        return self._show_form(self._criterion)
+        return self._show_form(self._criterion, existing_data or {})
 
     async def _async_handle_details(
         self, criterion: str, user_input: dict[str, Any] | None
-    ) -> SubentryFlowResult:
+    ) -> ConfigFlowResult:
         if user_input is None:
-            return self._show_form(criterion)
+            return self._show_form(criterion, {})
         data: dict[str, Any] = {CONF_CRITERION: criterion, **user_input}
         title = data[CONF_NAME]
         if self.source == "reconfigure":
-            return self.async_update_and_abort(
-                self._get_reconfigure_entry(),
-                self._get_reconfigure_subentry(),
-                data=data,
-                title=title,
+            return self.async_update_reload_and_abort(
+                self._get_reconfigure_entry(), data=data, title=title
             )
         return self.async_create_entry(title=title, data=data)
 
-    def _show_form(self, criterion: str) -> SubentryFlowResult:
+    def _show_form(self, criterion: str, existing_data: dict[str, Any]) -> ConfigFlowResult:
         schema = _CRITERION_SCHEMAS[criterion]
-        suggested = {k: v for k, v in self._existing_data.items() if k != CONF_CRITERION}
+        suggested = {k: v for k, v in existing_data.items() if k != CONF_CRITERION}
         return self.async_show_form(
             step_id=criterion,
+            data_schema=self.add_suggested_values_to_schema(schema, suggested),
+        )
+
+
+class MaintenanceOptionsFlow(OptionsFlow):
+    """Edit an existing tracker.
+
+    Shown as the "Configure" button on the helper card. The criterion cannot be
+    changed here (the persisted counter depends on it) — delete and recreate the
+    tracker if you need a different criterion.
+    """
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        entry = self.config_entry
+        criterion = entry.data[CONF_CRITERION]
+        schema = _CRITERION_SCHEMAS[criterion]
+
+        if user_input is not None:
+            new_data = {CONF_CRITERION: criterion, **user_input}
+            self.hass.config_entries.async_update_entry(
+                entry, data=new_data, title=user_input[CONF_NAME]
+            )
+            return self.async_create_entry(title="", data={})
+
+        suggested = {k: v for k, v in entry.data.items() if k != CONF_CRITERION}
+        return self.async_show_form(
+            step_id="init",
             data_schema=self.add_suggested_values_to_schema(schema, suggested),
         )

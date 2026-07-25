@@ -1,4 +1,4 @@
-"""Maintenance tracker sensor — one per tracker subentry."""
+"""Maintenance tracker sensor — one per config entry."""
 
 from __future__ import annotations
 
@@ -21,7 +21,6 @@ from .const import (
     STATE_DUE_SOON,
     STATE_OK,
     STATE_OVERDUE,
-    SUBENTRY_TYPE_TRACKER,
 )
 from .coordinator import MaintenanceCoordinator
 
@@ -31,16 +30,9 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Create one sensor per tracker subentry, grouped by subentry."""
-    runtime = entry.runtime_data
-    for subentry_id, subentry in entry.subentries.items():
-        if subentry.subentry_type != SUBENTRY_TYPE_TRACKER:
-            continue
-        coordinator = runtime.coordinators[subentry_id]
-        async_add_entities(
-            [MaintenanceSensor(coordinator, subentry.title)],
-            config_subentry_id=subentry_id,
-        )
+    """Create the tracker sensor for this config entry."""
+    coordinator = entry.runtime_data.coordinator
+    async_add_entities([MaintenanceSensor(coordinator, entry.title)])
 
     platform = entity_platform.async_get_current_platform()
     platform.async_register_entity_service(
@@ -74,7 +66,7 @@ class MaintenanceSensor(CoordinatorEntity[MaintenanceCoordinator], SensorEntity)
     def __init__(self, coordinator: MaintenanceCoordinator, title: str) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = coordinator.tracker_id
-        self._attr_name = None  # device name is the tracker name
+        self._attr_name = None
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, coordinator.tracker_id)},
             name=title,

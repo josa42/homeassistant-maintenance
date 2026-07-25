@@ -16,31 +16,44 @@ from custom_components.maintenance.const import (
 )
 
 
-async def test_single_instance(hass: HomeAssistant) -> None:
+async def test_full_flow_creates_entry(hass: HomeAssistant) -> None:
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
-    assert result["type"] == FlowResultType.CREATE_ENTRY
-    assert result["title"] == "Maintenance"
-
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": config_entries.SOURCE_USER}
-    )
-    assert result["type"] == FlowResultType.ABORT
-    assert result["reason"] in ("single_instance_allowed", "already_configured")
-
-
-async def test_time_elapsed_subentry_smoke(hass: HomeAssistant) -> None:
-    """Smoke test that the criterion picker returns the time_elapsed form."""
-    from custom_components.maintenance.config_flow import TrackerSubentryFlowHandler
-
-    handler = TrackerSubentryFlowHandler()
-    # Show the first step
-    result = await handler.async_step_user(None)
     assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == "user"
 
-    # Choose time_elapsed → get details form
-    result = await handler.async_step_user({CONF_CRITERION: CRITERION_TIME_ELAPSED})
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_CRITERION: CRITERION_TIME_ELAPSED}
+    )
     assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == CRITERION_TIME_ELAPSED
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_NAME: "Oven filter", CONF_INTERVAL_DAYS: 30, CONF_WARN_THRESHOLD_PERCENT: 90},
+    )
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    assert result["title"] == "Oven filter"
+    assert result["data"] == {
+        CONF_CRITERION: CRITERION_TIME_ELAPSED,
+        CONF_NAME: "Oven filter",
+        CONF_INTERVAL_DAYS: 30,
+        CONF_WARN_THRESHOLD_PERCENT: 90,
+    }
+
+
+async def test_multiple_trackers_allowed(hass: HomeAssistant) -> None:
+    """Each tracker is its own config entry; adding another must not abort."""
+    for name in ("A", "B"):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": config_entries.SOURCE_USER}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_CRITERION: CRITERION_TIME_ELAPSED}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_NAME: name, CONF_INTERVAL_DAYS: 30, CONF_WARN_THRESHOLD_PERCENT: 90},
+        )
+        assert result["type"] == FlowResultType.CREATE_ENTRY
