@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.2.3";
+const CARD_VERSION = "0.2.4";
 
 const STATE_COLOR = {
   ok: "var(--success-color, #4caf50)",
@@ -146,14 +146,14 @@ class MaintenanceCard extends HTMLElement {
         <style>
           :host { display: block; }
           ha-card {
-            padding: 6px 12px;
+            padding: 8px 16px;
             cursor: pointer;
             box-sizing: border-box;
             height: 100%;
             display: flex;
             align-items: center;
           }
-          .tile { display: flex; align-items: center; gap: 10px; min-width: 0; width: 100%; }
+          .tile { display: flex; align-items: center; gap: 12px; min-width: 0; width: 100%; }
           .icon-container {
             position: relative; width: 34px; height: 34px; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
@@ -486,11 +486,12 @@ class MaintenanceListCard extends HTMLElement {
           .row {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 6px 12px;
+            gap: 12px;
+            padding: 8px 16px;
             cursor: pointer;
             min-width: 0;
             box-sizing: border-box;
+            height: 56px;
           }
           .row:hover { background: var(--divider-color); }
           .row:focus { outline: none; }
