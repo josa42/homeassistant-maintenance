@@ -13,9 +13,12 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType
 
+from homeassistant.util import dt as dt_util
+
 from .const import (
     CONF_INTERVAL,
     CONF_INTERVAL_UNIT,
+    CONF_LAST_DONE,
     CONF_THRESHOLD,
     CONF_THRESHOLD_UNIT,
     UNIT_DAYS,
@@ -60,6 +63,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: MaintenanceConfigEntry) 
     """Set up a maintenance tracker (one per config entry)."""
     store = TrackerStore(hass, entry.entry_id)
     await store.async_load()
+
+    # last_done in entry.data is a one-shot seed: apply it to the persisted
+    # tracker state, then strip it from the entry so it doesn't clobber
+    # future updates from mark_done on the next reload.
+    raw_last_done = entry.data.get(CONF_LAST_DONE)
+    if raw_last_done:
+        parsed = dt_util.parse_datetime(str(raw_last_done))
+        if parsed is not None:
+            store.get(entry.entry_id).last_done_date = dt_util.as_utc(parsed)
+            await store.async_save_now()
+        new_data = {k: v for k, v in entry.data.items() if k != CONF_LAST_DONE}
+        hass.config_entries.async_update_entry(entry, data=new_data)
 
     coordinator = build_coordinator(
         hass, entry.entry_id, entry.entry_id, dict(entry.data), store

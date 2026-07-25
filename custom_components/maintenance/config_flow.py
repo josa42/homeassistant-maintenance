@@ -24,6 +24,7 @@ from .const import (
     CONF_FROM_STATE,
     CONF_INTERVAL,
     CONF_INTERVAL_UNIT,
+    CONF_LAST_DONE,
     CONF_MONTH_OF_YEAR,
     CONF_NAME,
     CONF_ON_STATE,
@@ -61,6 +62,7 @@ _DURATION_UNIT_SELECTOR = selector.SelectSelector(
         mode=selector.SelectSelectorMode.DROPDOWN,
     )
 )
+_LAST_DONE_SELECTOR = selector.DateTimeSelector()
 
 _CRITERION_SCHEMAS: dict[str, vol.Schema] = {
     CRITERION_TIME_ELAPSED: vol.Schema(
@@ -71,6 +73,7 @@ _CRITERION_SCHEMAS: dict[str, vol.Schema] = {
             ),
             vol.Required(CONF_INTERVAL_UNIT, default=DEFAULT_INTERVAL_UNIT): _DURATION_UNIT_SELECTOR,
             vol.Required(CONF_WARN_THRESHOLD_PERCENT, default=DEFAULT_WARN_THRESHOLD_PERCENT): _WARN_SELECTOR,
+            vol.Optional(CONF_LAST_DONE): _LAST_DONE_SELECTOR,
         }
     ),
     CRITERION_ENTITY_ON_DURATION: vol.Schema(
@@ -83,6 +86,7 @@ _CRITERION_SCHEMAS: dict[str, vol.Schema] = {
             ),
             vol.Required(CONF_THRESHOLD_UNIT, default=DEFAULT_THRESHOLD_UNIT): _DURATION_UNIT_SELECTOR,
             vol.Required(CONF_WARN_THRESHOLD_PERCENT, default=DEFAULT_WARN_THRESHOLD_PERCENT): _WARN_SELECTOR,
+            vol.Optional(CONF_LAST_DONE): _LAST_DONE_SELECTOR,
         }
     ),
     CRITERION_ENTITY_USAGE_COUNT: vol.Schema(
@@ -95,6 +99,7 @@ _CRITERION_SCHEMAS: dict[str, vol.Schema] = {
                 selector.NumberSelectorConfig(min=1, step=1, mode=selector.NumberSelectorMode.BOX)
             ),
             vol.Required(CONF_WARN_THRESHOLD_PERCENT, default=DEFAULT_WARN_THRESHOLD_PERCENT): _WARN_SELECTOR,
+            vol.Optional(CONF_LAST_DONE): _LAST_DONE_SELECTOR,
         }
     ),
     CRITERION_RECURRING_DATE: vol.Schema(
@@ -115,6 +120,7 @@ _CRITERION_SCHEMAS: dict[str, vol.Schema] = {
                 )
             ),
             vol.Required(CONF_WARN_THRESHOLD_PERCENT, default=DEFAULT_WARN_THRESHOLD_PERCENT): _WARN_SELECTOR,
+            vol.Optional(CONF_LAST_DONE): _LAST_DONE_SELECTOR,
         }
     ),
 }

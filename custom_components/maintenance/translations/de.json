@@ -14,7 +14,8 @@
           "name": "Name",
           "interval": "Intervall",
           "interval_unit": "Einheit",
-          "warn_threshold_percent": "Warnschwelle (%)"
+          "warn_threshold_percent": "Warnschwelle (%)",
+          "last_done": "Zuletzt erledigt (optional)"
         }
       },
       "entity_on_duration": {
@@ -25,7 +26,8 @@
           "on_state": "Zustand für „an“",
           "threshold": "Schwellenwert",
           "threshold_unit": "Einheit",
-          "warn_threshold_percent": "Warnschwelle (%)"
+          "warn_threshold_percent": "Warnschwelle (%)",
+          "last_done": "Zuletzt erledigt (optional)"
         }
       },
       "entity_usage_count": {
@@ -36,7 +38,8 @@
           "from_state": "Vom Zustand",
           "to_state": "Zum Zustand",
           "threshold_count": "Schwellenwert (Nutzungen)",
-          "warn_threshold_percent": "Warnschwelle (%)"
+          "warn_threshold_percent": "Warnschwelle (%)",
+          "last_done": "Zuletzt erledigt (optional)"
         }
       },
       "recurring_date": {
@@ -45,7 +48,8 @@
           "name": "Name",
           "day_of_month": "Tag des Monats",
           "month_of_year": "Monat",
-          "warn_threshold_percent": "Warnschwelle (%)"
+          "warn_threshold_percent": "Warnschwelle (%)",
+          "last_done": "Zuletzt erledigt (optional)"
         }
       }
     },

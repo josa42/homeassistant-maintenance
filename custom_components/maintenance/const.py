@@ -73,6 +73,7 @@ CONF_THRESHOLD_COUNT: Final = "threshold_count"
 CONF_WARN_THRESHOLD_PERCENT: Final = "warn_threshold_percent"
 CONF_DAY_OF_MONTH: Final = "day_of_month"
 CONF_MONTH_OF_YEAR: Final = "month_of_year"
+CONF_LAST_DONE: Final = "last_done"
 
 MONTH_ANY: Final = "any"
 

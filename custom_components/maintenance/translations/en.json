@@ -14,7 +14,8 @@
           "name": "Name",
           "interval": "Interval",
           "interval_unit": "Unit",
-          "warn_threshold_percent": "Warn threshold (%)"
+          "warn_threshold_percent": "Warn threshold (%)",
+          "last_done": "Last done (optional)"
         }
       },
       "entity_on_duration": {
@@ -25,7 +26,8 @@
           "on_state": "State considered \"on\"",
           "threshold": "Threshold",
           "threshold_unit": "Unit",
-          "warn_threshold_percent": "Warn threshold (%)"
+          "warn_threshold_percent": "Warn threshold (%)",
+          "last_done": "Last done (optional)"
         }
       },
       "entity_usage_count": {
@@ -36,7 +38,8 @@
           "from_state": "From state",
           "to_state": "To state",
           "threshold_count": "Threshold (uses)",
-          "warn_threshold_percent": "Warn threshold (%)"
+          "warn_threshold_percent": "Warn threshold (%)",
+          "last_done": "Last done (optional)"
         }
       },
       "recurring_date": {
@@ -45,7 +48,8 @@
           "name": "Name",
           "day_of_month": "Day of month",
           "month_of_year": "Month",
-          "warn_threshold_percent": "Warn threshold (%)"
+          "warn_threshold_percent": "Warn threshold (%)",
+          "last_done": "Last done (optional)"
         }
       }
     },
