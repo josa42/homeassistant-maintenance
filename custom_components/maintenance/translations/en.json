@@ -145,7 +145,8 @@
     "empty_all_ok_one": "Nothing due — 1 tracker is up to date.",
     "empty_all_ok_other": "Nothing due — all {count} trackers are up to date.",
     "units": {
-      "uses": "uses"
+      "uses_one": "use",
+      "uses_other": "uses"
     },
     "editor": {
       "entity": "Maintenance tracker",

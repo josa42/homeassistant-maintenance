@@ -145,7 +145,8 @@
     "empty_all_ok_one": "Nichts fällig — 1 Tracker ist auf dem neuesten Stand.",
     "empty_all_ok_other": "Nichts fällig — alle {count} Tracker sind auf dem neuesten Stand.",
     "units": {
-      "uses": "Nutzungen"
+      "uses_one": "Nutzung",
+      "uses_other": "Nutzungen"
     },
     "editor": {
       "entity": "Wartungstracker",

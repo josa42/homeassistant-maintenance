@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.3.25";
+const CARD_VERSION = "0.3.26";
 
 const STATE_COLOR = {
   ok: "var(--success-color, #4caf50)",
@@ -33,7 +33,8 @@ const EN_FALLBACK = {
     "Nothing due — 1 tracker is up to date.",
   "component.maintenance.card.empty_all_ok_other":
     "Nothing due — all {count} trackers are up to date.",
-  "component.maintenance.card.units.uses": "uses",
+  "component.maintenance.card.units.uses_one": "use",
+  "component.maintenance.card.units.uses_other": "uses",
   "component.maintenance.card.editor.entity": "Maintenance tracker",
   "component.maintenance.card.editor.confirm": "Confirm before mark done",
   "component.maintenance.card.editor.hide_ok": "Hide OK trackers",
@@ -63,10 +64,12 @@ function _fmtDuration(hass, value, unit) {
   const nfInt = new Intl.NumberFormat(lang, { maximumFractionDigits: 0 });
 
   if (unit === "uses") {
-    return `${nfInt.format(Math.round(value))} ${_t(
-      hass,
-      "component.maintenance.card.units.uses"
-    )}`;
+    const rounded = Math.round(value);
+    const key =
+      rounded === 1
+        ? "component.maintenance.card.units.uses_one"
+        : "component.maintenance.card.units.uses_other";
+    return `${nfInt.format(rounded)} ${_t(hass, key)}`;
   }
 
   if (!SECONDS_PER_UNIT[unit]) return nfInt.format(value);
@@ -128,6 +131,49 @@ function _fmtDuration(hass, value, unit) {
   if (secondaryVal > 0) parts.push(fmtNarrow(secondaryVal, secondary[0]));
   if (parts.length === 0) parts.push(fmtNarrow(0, primary[0]));
   return parts.join(" ");
+}
+
+// Format "counter / threshold" and, when both values are whole numbers of the
+// same unit, collapse the shared unit label to the end: "0 / 5 months" rather
+// than "0 months / 5 months". Pluralisation always follows the threshold
+// count (via Intl for standard units, via singular/plural translations for
+// custom units like "uses").
+function _fmtProgress(hass, counter, threshold, unit) {
+  if (!Number.isFinite(counter)) return "";
+  if (!threshold) return _fmtDuration(hass, counter, unit);
+
+  const lang = (hass && hass.language) || "en";
+  const cRounded = Math.round(counter);
+  const tRounded = Math.round(threshold);
+  const bothWhole =
+    Math.abs(counter - cRounded) < 0.005 &&
+    Math.abs(threshold - tRounded) < 0.005;
+
+  if (bothWhole && SECONDS_PER_UNIT[unit]) {
+    const unitSingular = {
+      minutes: "minute", hours: "hour", days: "day",
+      weeks: "week", months: "month", years: "year",
+    }[unit];
+    const nf = new Intl.NumberFormat(lang, { maximumFractionDigits: 0 });
+    const thresholdWithUnit = new Intl.NumberFormat(lang, {
+      style: "unit",
+      unit: unitSingular,
+      unitDisplay: "long",
+      maximumFractionDigits: 0,
+    }).format(tRounded);
+    return `${nf.format(cRounded)} / ${thresholdWithUnit}`;
+  }
+
+  if (bothWhole && unit === "uses") {
+    const nf = new Intl.NumberFormat(lang, { maximumFractionDigits: 0 });
+    const key =
+      tRounded === 1
+        ? "component.maintenance.card.units.uses_one"
+        : "component.maintenance.card.units.uses_other";
+    return `${nf.format(cRounded)} / ${nf.format(tRounded)} ${_t(hass, key)}`;
+  }
+
+  return `${_fmtDuration(hass, counter, unit)} / ${_fmtDuration(hass, threshold, unit)}`;
 }
 
 function _stateLabelOf(hass, status) {
@@ -235,9 +281,12 @@ class MaintenanceCard extends HTMLElement {
       attrs.estimated_due_date,
       status
     );
-    this._els.counter.textContent = threshold
-      ? `${_fmtDuration(this._hass, counter, unit)} / ${_fmtDuration(this._hass, threshold, unit)}`
-      : _fmtDuration(this._hass, counter, unit);
+    this._els.counter.textContent = _fmtProgress(
+      this._hass,
+      counter,
+      threshold,
+      unit
+    );
     this._els.fill.style.width = `${progress}%`;
     this._els.icon.setAttribute("icon", icon);
 
@@ -915,10 +964,7 @@ function _escape(s) {
 }
 
 function _counterText(hass, r) {
-  if (!Number.isFinite(r.counter)) return "";
-  return r.threshold
-    ? `${_fmtDuration(hass, r.counter, r.unit)} / ${_fmtDuration(hass, r.threshold, r.unit)}`
-    : _fmtDuration(hass, r.counter, r.unit);
+  return _fmtProgress(hass, r.counter, r.threshold, r.unit);
 }
 
 function _confirmDialog(_dispatchEl, text, title, okLabel, cancelLabel) {
