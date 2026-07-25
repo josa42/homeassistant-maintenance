@@ -57,7 +57,20 @@ type: custom:maintenance-card
 entity: sensor.oven_filter
 ```
 
-The card shows the tracker's name, a progress bar in the state color (green / orange / red for ok / due soon / overdue), the counter over the threshold, and the estimated due date as a relative time (e.g. "due in 3 months", "3 days ago" when overdue). Clicking the tile opens the entity's more-info dialog.
+The card shows the tracker's name, a progress bar in the state color (green / orange / red for ok / due soon / overdue), the counter over the threshold, and the estimated due date as a relative time (e.g. "in 3 months", "3 days ago" when overdue). Clicking the tile opens the entity's more-info dialog.
+
+### List card
+
+A second card, `maintenance-list-card`, auto-discovers all trackers and lists them sorted by urgency (overdue first, then due soon, then ok — each group sorted by progress).
+
+```yaml
+type: custom:maintenance-list-card
+title: Maintenance      # optional; defaults to "Maintenance"
+hide_ok: false          # optional; hide healthy trackers
+entities:               # optional; override auto-discovery
+  - sensor.oven_filter
+  - sensor.washer_clean
+```
 
 ## Services
 
