@@ -11,7 +11,6 @@ Each **tracker** is one maintenance job (change oven filter, clean washer, repla
 | `time_elapsed` | The configured interval has passed since it was last done |
 | `entity_on_duration` | A target entity has spent the configured duration in the "on" state since it was last done |
 | `entity_usage_count` | A target entity has transitioned `from → to` state N times since it was last done |
-| `manual` | Only marked via the "mark done" service / button |
 
 Durations (interval / on-duration threshold) accept **minutes, hours, days, weeks, months, or years**. Months and years are computed as 30.4375 and 365.25 days respectively.
 

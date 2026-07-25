@@ -38,13 +38,6 @@
           "threshold_count": "Threshold (uses)",
           "warn_threshold_percent": "Warn threshold (%)"
         }
-      },
-      "manual": {
-        "title": "Manual only",
-        "data": {
-          "name": "Name",
-          "warn_threshold_percent": "Warn threshold (%)"
-        }
       }
     },
     "abort": {
@@ -64,8 +57,7 @@
       "options": {
         "time_elapsed": "Time elapsed",
         "entity_on_duration": "Entity on-duration",
-        "entity_usage_count": "Entity usage count",
-        "manual": "Manual only"
+        "entity_usage_count": "Entity usage count"
       }
     },
     "duration_unit": {

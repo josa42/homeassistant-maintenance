@@ -33,7 +33,6 @@ from .const import (
     CONF_WARN_THRESHOLD_PERCENT,
     CRITERION_ENTITY_ON_DURATION,
     CRITERION_ENTITY_USAGE_COUNT,
-    CRITERION_MANUAL,
     CRITERION_TIME_ELAPSED,
     DEFAULT_FROM_STATE,
     DEFAULT_INTERVAL_UNIT,
@@ -94,12 +93,6 @@ _CRITERION_SCHEMAS: dict[str, vol.Schema] = {
             vol.Required(CONF_WARN_THRESHOLD_PERCENT, default=DEFAULT_WARN_THRESHOLD_PERCENT): _WARN_SELECTOR,
         }
     ),
-    CRITERION_MANUAL: vol.Schema(
-        {
-            vol.Required(CONF_NAME): _NAME_SELECTOR,
-            vol.Required(CONF_WARN_THRESHOLD_PERCENT, default=DEFAULT_WARN_THRESHOLD_PERCENT): _WARN_SELECTOR,
-        }
-    ),
 }
 
 
@@ -130,7 +123,6 @@ class MaintenanceConfigFlow(ConfigFlow, domain=DOMAIN):
                                 CRITERION_TIME_ELAPSED,
                                 CRITERION_ENTITY_ON_DURATION,
                                 CRITERION_ENTITY_USAGE_COUNT,
-                                CRITERION_MANUAL,
                             ],
                             translation_key="criterion",
                             mode=selector.SelectSelectorMode.DROPDOWN,
@@ -161,11 +153,6 @@ class MaintenanceConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         return await self._async_handle_details(CRITERION_ENTITY_USAGE_COUNT, user_input)
-
-    async def async_step_manual(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        return await self._async_handle_details(CRITERION_MANUAL, user_input)
 
     async def _async_show_details_step(
         self, existing_data: dict[str, Any] | None = None

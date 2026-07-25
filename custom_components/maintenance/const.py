@@ -12,13 +12,11 @@ PLATFORMS: Final = ["sensor", "button"]
 CRITERION_TIME_ELAPSED: Final = "time_elapsed"
 CRITERION_ENTITY_ON_DURATION: Final = "entity_on_duration"
 CRITERION_ENTITY_USAGE_COUNT: Final = "entity_usage_count"
-CRITERION_MANUAL: Final = "manual"
 
 CRITERIA: Final = (
     CRITERION_TIME_ELAPSED,
     CRITERION_ENTITY_ON_DURATION,
     CRITERION_ENTITY_USAGE_COUNT,
-    CRITERION_MANUAL,
 )
 
 # Tracker states

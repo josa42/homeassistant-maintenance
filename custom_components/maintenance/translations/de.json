@@ -38,13 +38,6 @@
           "threshold_count": "Schwellenwert (Nutzungen)",
           "warn_threshold_percent": "Warnschwelle (%)"
         }
-      },
-      "manual": {
-        "title": "Nur manuell",
-        "data": {
-          "name": "Name",
-          "warn_threshold_percent": "Warnschwelle (%)"
-        }
       }
     },
     "abort": {
@@ -64,8 +57,7 @@
       "options": {
         "time_elapsed": "Verstrichene Zeit",
         "entity_on_duration": "Einschaltdauer einer Entität",
-        "entity_usage_count": "Nutzungsanzahl einer Entität",
-        "manual": "Nur manuell"
+        "entity_usage_count": "Nutzungsanzahl einer Entität"
       }
     },
     "duration_unit": {

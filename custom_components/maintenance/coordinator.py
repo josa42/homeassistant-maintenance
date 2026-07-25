@@ -29,7 +29,6 @@ from .const import (
     CONF_WARN_THRESHOLD_PERCENT,
     CRITERION_ENTITY_ON_DURATION,
     CRITERION_ENTITY_USAGE_COUNT,
-    CRITERION_MANUAL,
     CRITERION_TIME_ELAPSED,
     DEFAULT_FROM_STATE,
     DEFAULT_INTERVAL_UNIT,
@@ -41,7 +40,6 @@ from .const import (
     STATE_DUE_SOON,
     STATE_OK,
     STATE_OVERDUE,
-    UNIT_DAYS,
     UNIT_SECONDS,
     UNIT_USES,
 )
@@ -252,26 +250,6 @@ class TimeElapsedCoordinator(MaintenanceCoordinator):
         )
 
 
-class ManualCoordinator(MaintenanceCoordinator):
-    """No auto-trigger; state is always ok until manually overdue."""
-
-    def _compute(self) -> MaintenanceData:
-        last_done = self.persisted.last_done_date
-        now = dt_util.utcnow()
-        elapsed_days = (now - last_done).total_seconds() / 86400 if last_done else 0.0
-        return MaintenanceData(
-            state=STATE_OK,
-            counter=round(elapsed_days, 2),
-            counter_unit=UNIT_DAYS,
-            progress=0.0,
-            threshold=0.0,
-            last_done_date=last_done,
-            estimated_due_date=None,
-            criterion=CRITERION_MANUAL,
-            warn_threshold_percent=self.warn_threshold_percent,
-        )
-
-
 class EntityOnDurationCoordinator(MaintenanceCoordinator):
     """Accumulate seconds the target entity spends in the on-state."""
 
@@ -451,6 +429,4 @@ def build_coordinator(
         return EntityOnDurationCoordinator(hass, entry_id, tracker_id, config, store)
     if criterion == CRITERION_ENTITY_USAGE_COUNT:
         return EntityUsageCountCoordinator(hass, entry_id, tracker_id, config, store)
-    if criterion == CRITERION_MANUAL:
-        return ManualCoordinator(hass, entry_id, tracker_id, config, store)
     raise ValueError(f"Unknown criterion: {criterion}")
