@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.1.1";
+const CARD_VERSION = "0.1.4";
 
 const STATE_COLOR = {
   ok: "var(--success-color, #4caf50)",
@@ -43,6 +43,13 @@ class MaintenanceCard extends HTMLElement {
     if (this._config && this._hass) this._update();
   }
 
+  disconnectedCallback() {
+    if (this._tickHandle) {
+      clearTimeout(this._tickHandle);
+      this._tickHandle = null;
+    }
+  }
+
   _update() {
     const state = this._hass.states[this._config.entity];
     if (!state) {
@@ -77,6 +84,34 @@ class MaintenanceCard extends HTMLElement {
       : `${this._fmt(counter)} ${unit}`.trim();
     this._els.fill.style.width = `${progress}%`;
     this._els.icon.setAttribute("icon", icon);
+
+    this._scheduleTick(attrs.estimated_due_date);
+  }
+
+  _scheduleTick(dueIso) {
+    if (this._tickHandle) {
+      clearTimeout(this._tickHandle);
+      this._tickHandle = null;
+    }
+    if (!dueIso || !this.isConnected) return;
+    const diffSec = Math.abs((new Date(dueIso).getTime() - Date.now()) / 1000);
+    let ms;
+    if (diffSec < 60) ms = 1000;
+    else if (diffSec < 3600) ms = 30_000;
+    else if (diffSec < 86400) ms = 300_000;
+    else ms = 3_600_000;
+    this._tickHandle = setTimeout(() => this._tick(), ms);
+  }
+
+  _tick() {
+    if (!this.isConnected || !this._hass || !this._config) return;
+    const state = this._hass.states[this._config.entity];
+    if (!state || !this._built) return;
+    this._els.due.textContent = this._relativeDue(
+      state.attributes.estimated_due_date,
+      state.state
+    );
+    this._scheduleTick(state.attributes.estimated_due_date);
   }
 
   _build() {
@@ -100,84 +135,43 @@ class MaintenanceCard extends HTMLElement {
         </div>
         <style>
           :host { display: block; }
-          ha-card {
-            padding: 12px;
-            cursor: pointer;
-            box-sizing: border-box;
-          }
-          .tile {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            min-width: 0;
-          }
+          ha-card { padding: 12px; cursor: pointer; box-sizing: border-box; }
+          .tile { display: flex; align-items: center; gap: 12px; min-width: 0; }
           .icon-container {
-            position: relative;
-            width: 40px;
-            height: 40px;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            position: relative; width: 40px; height: 40px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
           }
           .icon-bg {
-            position: absolute;
-            inset: 0;
-            border-radius: 50%;
-            background: var(--state-color);
-            opacity: 0.2;
+            position: absolute; inset: 0; border-radius: 50%;
+            background: var(--state-color); opacity: 0.2;
           }
           ha-icon {
-            position: relative;
-            color: var(--state-color);
-            --mdc-icon-size: 24px;
+            position: relative; color: var(--state-color); --mdc-icon-size: 24px;
           }
-          .info {
-            flex: 1;
-            min-width: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-          }
+          .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
           .row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            min-width: 0;
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 8px; min-width: 0;
           }
           .name {
-            font-weight: 500;
-            color: var(--primary-text-color);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            font-weight: 500; color: var(--primary-text-color);
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
           }
           .due, .counter {
-            color: var(--secondary-text-color);
-            font-size: 0.85em;
-            white-space: nowrap;
-            flex-shrink: 0;
+            color: var(--secondary-text-color); font-size: 0.85em;
+            white-space: nowrap; flex-shrink: 0;
           }
           .progress-bar {
-            flex: 1;
-            height: 6px;
-            background: var(--divider-color);
-            border-radius: 3px;
-            overflow: hidden;
-            min-width: 30px;
+            flex: 1; height: 6px; background: var(--divider-color);
+            border-radius: 3px; overflow: hidden; min-width: 30px;
           }
           .progress-fill {
-            height: 100%;
-            border-radius: 3px;
-            background: var(--state-color);
+            height: 100%; border-radius: 3px; background: var(--state-color);
             transition: width 0.3s ease, background 0.3s ease;
           }
           .tile:focus { outline: none; }
           .tile:focus-visible {
-            outline: 2px solid var(--state-color);
-            outline-offset: 2px;
-            border-radius: 6px;
+            outline: 2px solid var(--state-color); outline-offset: 2px; border-radius: 6px;
           }
         </style>
       </ha-card>
@@ -220,10 +214,13 @@ class MaintenanceCard extends HTMLElement {
   }
 
   _relativeDue(dueIso, status) {
-    if (!dueIso) return "";
+    if (!dueIso) return this._stateLabel(status);
     const due = new Date(dueIso);
-    if (isNaN(due.getTime())) return "";
+    if (isNaN(due.getTime())) return this._stateLabel(status);
     const diffSec = (due.getTime() - Date.now()) / 1000;
+    if (diffSec <= 0 && status !== "overdue") return this._stateLabel(status);
+    if (diffSec > 0 && status === "overdue") return this._stateLabel(status);
+
     const abs = Math.abs(diffSec);
     let value, unit;
     if (abs < 60) { value = diffSec; unit = "second"; }
@@ -234,8 +231,18 @@ class MaintenanceCard extends HTMLElement {
     else { value = diffSec / 31557600; unit = "year"; }
     const lang = (this._hass && this._hass.language) || "en";
     const rtf = new Intl.RelativeTimeFormat(lang, { numeric: "auto" });
-    const formatted = rtf.format(Math.round(value), unit);
-    return status === "overdue" ? formatted : `due ${formatted}`;
+    return rtf.format(Math.round(value), unit);
+  }
+
+  _stateLabel(status) {
+    if (this._hass && this._hass.localize) {
+      const key = `component.maintenance.entity.sensor.tracker.state.${status}`;
+      const label = this._hass.localize(key);
+      if (label) return label;
+    }
+    return (
+      { ok: "OK", due_soon: "Due soon", overdue: "Overdue" }[status] || ""
+    );
   }
 }
 
@@ -287,11 +294,18 @@ class MaintenanceCardEditor extends HTMLElement {
   }
 }
 
-if (!customElements.get("maintenance-card")) {
-  customElements.define("maintenance-card", MaintenanceCard);
-}
-if (!customElements.get("maintenance-card-editor")) {
-  customElements.define("maintenance-card-editor", MaintenanceCardEditor);
+// Register early — before any classes are used elsewhere — to survive races
+// where HA's dashboard renderer looks up the element before the module has
+// finished executing.
+try {
+  if (!customElements.get("maintenance-card")) {
+    customElements.define("maintenance-card", MaintenanceCard);
+  }
+  if (!customElements.get("maintenance-card-editor")) {
+    customElements.define("maintenance-card-editor", MaintenanceCardEditor);
+  }
+} catch (e) {
+  console.error("[maintenance-card] failed to define custom element:", e);
 }
 
 window.customCards = window.customCards || [];
