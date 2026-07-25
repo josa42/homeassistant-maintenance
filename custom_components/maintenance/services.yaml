@@ -1,0 +1,15 @@
+mark_done:
+  target:
+    entity:
+      integration: maintenance
+      domain: sensor
+  fields:
+    date:
+      required: false
+      selector:
+        datetime:
+reset:
+  target:
+    entity:
+      integration: maintenance
+      domain: sensor

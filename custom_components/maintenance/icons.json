@@ -1,0 +1,22 @@
+{
+  "entity": {
+    "sensor": {
+      "tracker": {
+        "default": "mdi:wrench-clock"
+      }
+    },
+    "button": {
+      "mark_done": {
+        "default": "mdi:check-circle"
+      }
+    }
+  },
+  "services": {
+    "mark_done": {
+      "service": "mdi:check-circle"
+    },
+    "reset": {
+      "service": "mdi:restart"
+    }
+  }
+}

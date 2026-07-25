@@ -1,0 +1,13 @@
+{
+  "domain": "maintenance",
+  "name": "Maintenance Tracker",
+  "version": "0.1.0",
+  "documentation": "https://github.com/josa42/homeassistant-maintenance",
+  "issue_tracker": "https://github.com/josa42/homeassistant-maintenance/issues",
+  "codeowners": ["@josa42"],
+  "iot_class": "calculated",
+  "integration_type": "helper",
+  "config_flow": true,
+  "requirements": [],
+  "dependencies": []
+}

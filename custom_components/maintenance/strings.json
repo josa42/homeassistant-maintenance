@@ -1,0 +1,108 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Maintenance",
+        "description": "Set up the Maintenance integration. After adding it, use “Add tracker” to create individual maintenance trackers."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Only a single Maintenance integration entry is supported. Add trackers via “Add tracker” on the existing entry."
+    }
+  },
+  "config_subentries": {
+    "tracker": {
+      "initiate_flow": {
+        "user": "Add tracker",
+        "reconfigure": "Edit tracker"
+      },
+      "entry_type": "Tracker",
+      "step": {
+        "user": {
+          "title": "Choose criterion",
+          "description": "How should this maintenance tracker determine when it is due?",
+          "data": {
+            "criterion": "Criterion"
+          }
+        },
+        "time_elapsed": {
+          "title": "Time elapsed",
+          "data": {
+            "name": "Name",
+            "interval_days": "Interval (days)",
+            "warn_threshold_percent": "Warn threshold (%)"
+          }
+        },
+        "entity_on_duration": {
+          "title": "Entity on-duration",
+          "data": {
+            "name": "Name",
+            "target_entity_id": "Target entity",
+            "on_state": "State to consider “on”",
+            "threshold_hours": "Threshold (hours)",
+            "warn_threshold_percent": "Warn threshold (%)"
+          }
+        },
+        "entity_usage_count": {
+          "title": "Entity usage count",
+          "data": {
+            "name": "Name",
+            "target_entity_id": "Target entity",
+            "from_state": "From state",
+            "to_state": "To state",
+            "threshold_count": "Threshold (uses)",
+            "warn_threshold_percent": "Warn threshold (%)"
+          }
+        },
+        "manual": {
+          "title": "Manual only",
+          "data": {
+            "name": "Name",
+            "warn_threshold_percent": "Warn threshold (%)"
+          }
+        },
+        "reconfigure": {
+          "title": "Edit tracker",
+          "description": "Modify this tracker’s configuration."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "tracker": {
+        "state": {
+          "ok": "OK",
+          "due_soon": "Due soon",
+          "overdue": "Overdue"
+        },
+        "state_attributes": {
+          "estimated_due_date": { "name": "Estimated due" },
+          "counter": { "name": "Counter" },
+          "counter_unit": { "name": "Counter unit" },
+          "last_done_date": { "name": "Last done" },
+          "progress": { "name": "Progress" },
+          "criterion": { "name": "Criterion" },
+          "threshold": { "name": "Threshold" },
+          "warn_threshold_percent": { "name": "Warn threshold" }
+        }
+      }
+    }
+  },
+  "services": {
+    "mark_done": {
+      "name": "Mark done",
+      "description": "Mark the target maintenance tracker(s) as just completed.",
+      "fields": {
+        "date": {
+          "name": "Date",
+          "description": "Timestamp of completion. Defaults to now."
+        }
+      }
+    },
+    "reset": {
+      "name": "Reset counter",
+      "description": "Reset the counter without changing the last-done date."
+    }
+  }
+}
