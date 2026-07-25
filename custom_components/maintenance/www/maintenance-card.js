@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.2.5";
+const CARD_VERSION = "0.3.21";
 
 const STATE_COLOR = {
   ok: "var(--success-color, #4caf50)",
@@ -157,6 +157,13 @@ class MaintenanceCard extends HTMLElement {
           .icon-container {
             position: relative; width: 34px; height: 34px; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
+            cursor: pointer; border-radius: 50%;
+          }
+          .icon-container:hover .icon-bg { opacity: 0.35; }
+          .icon-container:focus { outline: none; }
+          .icon-container:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--state-color);
           }
           .icon-bg {
             position: absolute; inset: 0; border-radius: 50%;
@@ -187,8 +194,12 @@ class MaintenanceCard extends HTMLElement {
             transition: width 0.3s ease, background 0.3s ease;
           }
           .tile:focus { outline: none; }
-          .tile:focus-visible {
-            outline: 2px solid var(--state-color); outline-offset: 2px; border-radius: 6px;
+          .tile:focus-visible { outline: none; }
+          /* Focus outline lives on ha-card so the whole card outlines,
+             matching HA's own tile card behavior. */
+          ha-card:has(.tile:focus-visible) {
+            outline: 2px solid var(--state-color);
+            outline-offset: 2px;
           }
         </style>
       </ha-card>
@@ -215,6 +226,23 @@ class MaintenanceCard extends HTMLElement {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         openMoreInfo();
+      }
+    });
+    const iconEl = this.querySelector(".icon-container");
+    iconEl.setAttribute("role", "button");
+    iconEl.setAttribute("tabindex", "0");
+    iconEl.style.cursor = "pointer";
+    iconEl.title = "Mark done";
+    const markDone = (e) => {
+      e.stopPropagation();
+      _markDone(this, this._hass, this._config.entity, this._config.confirm ?? true);
+    };
+    iconEl.addEventListener("click", markDone);
+    iconEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        e.stopPropagation();
+        _markDone(this, this._hass, this._config.entity, this._config.confirm ?? true);
       }
     });
     this._built = true;
@@ -273,6 +301,7 @@ const EDITOR_SCHEMA = [
       },
     },
   },
+  { name: "confirm", selector: { boolean: {} } },
 ];
 
 class MaintenanceCardEditor extends HTMLElement {
@@ -292,7 +321,9 @@ class MaintenanceCardEditor extends HTMLElement {
       const form = document.createElement("ha-form");
       form.schema = EDITOR_SCHEMA;
       form.computeLabel = (s) =>
-        s.name === "entity" ? "Maintenance tracker" : s.name;
+        ({ entity: "Maintenance tracker", confirm: "Confirm before mark done" }[
+          s.name
+        ] || s.name);
       form.addEventListener("value-changed", (e) => {
         this._config = { ...this._config, ...e.detail.value };
         this.dispatchEvent(
@@ -307,7 +338,10 @@ class MaintenanceCardEditor extends HTMLElement {
       this.appendChild(form);
     }
     this._form.hass = this._hass;
-    this._form.data = { entity: this._config.entity || "" };
+    this._form.data = {
+      entity: this._config.entity || "",
+      confirm: this._config.confirm ?? true,
+    };
   }
 }
 
@@ -424,7 +458,8 @@ class MaintenanceListCard extends HTMLElement {
         (r, i) => `
         <div class="row" data-idx="${i}" role="button" tabindex="0"
              style="--state-color: ${r.color}">
-          <div class="icon-container">
+          <div class="icon-container" role="button" tabindex="0"
+               title="Mark done">
             <div class="icon-bg"></div>
             <ha-icon icon="${r.icon}"></ha-icon>
           </div>
@@ -450,7 +485,8 @@ class MaintenanceListCard extends HTMLElement {
       el.textContent = _relativeDue(r.dueIso, r.status, this._hass);
     });
 
-    // Row click → open more-info.
+    // Row click → open more-info. Icon click → mark done.
+    const confirmOpt = this._config.confirm ?? true;
     this._els.list.querySelectorAll(".row").forEach((el) => {
       const idx = Number(el.dataset.idx);
       const entityId = rows[idx].entityId;
@@ -469,6 +505,19 @@ class MaintenanceListCard extends HTMLElement {
           open();
         }
       });
+      const iconEl = el.querySelector(".icon-container");
+      const markDone = (e) => {
+        e.stopPropagation();
+        _markDone(this, this._hass, entityId, confirmOpt);
+      };
+      iconEl.addEventListener("click", markDone);
+      iconEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          e.stopPropagation();
+          _markDone(this, this._hass, entityId, confirmOpt);
+        }
+      });
     });
 
     this._scheduleTick();
@@ -482,16 +531,32 @@ class MaintenanceListCard extends HTMLElement {
           :host { display: block; }
           ha-card {
             padding: 0;
+            /* HA's default 1px border on ha-card shrinks the client area by
+               2px, so N rows @ 56px each overflow by 2px. Both symptoms
+               (focus outline clipped at bottom, and 2px scroll shift when
+               tabbing to the last row) trace back to that. Zero the border
+               so client area == offset height. */
+            border: 0;
             height: 100%;
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            overflow: clip;
           }
-          .list { display: flex; flex-direction: column; min-height: 0; }
+          .list {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            gap: var(--row-gap, 8px);
+          }
           .empty {
-            padding: 12px 16px;
+            padding: 16px;
+            min-height: 56px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
             color: var(--secondary-text-color);
+            font-size: 0.9em;
           }
           .row {
             display: flex;
@@ -501,13 +566,32 @@ class MaintenanceListCard extends HTMLElement {
             cursor: pointer;
             min-width: 0;
             box-sizing: border-box;
-            height: 56px;
+            min-height: var(--row-height, 56px);
+            position: relative;
+          }
+          /* First/last rows inherit the card's corner radius so their focus
+             ring and hover bg follow the card silhouette. */
+          .row:first-child {
+            border-top-left-radius: var(--ha-card-border-radius, 12px);
+            border-top-right-radius: var(--ha-card-border-radius, 12px);
+          }
+          .row:last-child {
+            border-bottom-left-radius: var(--ha-card-border-radius, 12px);
+            border-bottom-right-radius: var(--ha-card-border-radius, 12px);
           }
           .row:hover { background: var(--divider-color); }
           .row:focus { outline: none; }
-          .row:focus-visible {
-            outline: 2px solid var(--state-color);
-            outline-offset: -2px;
+          .row::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            border-radius: inherit;
+            border: 2px solid transparent;
+            box-sizing: border-box;
+          }
+          .row:focus-visible::before {
+            border-color: var(--state-color);
           }
           .icon-container {
             position: relative;
@@ -517,6 +601,15 @@ class MaintenanceListCard extends HTMLElement {
             display: flex;
             align-items: center;
             justify-content: center;
+            cursor: pointer;
+            border-radius: 50%;
+          }
+          .icon-container:hover .icon-bg { opacity: 0.35; }
+          .icon-container:focus { outline: none; }
+          .icon-container:focus-visible {
+            outline: none;
+            /* box-shadow follows border-radius (circle) reliably; outline can fall back to a rectangle on some browsers. */
+            box-shadow: 0 0 0 2px var(--state-color);
           }
           .icon-bg {
             position: absolute;
@@ -617,6 +710,7 @@ class MaintenanceListCard extends HTMLElement {
 
 const LIST_EDITOR_SCHEMA = [
   { name: "hide_ok", selector: { boolean: {} } },
+  { name: "confirm", selector: { boolean: {} } },
 ];
 
 class MaintenanceListCardEditor extends HTMLElement {
@@ -636,7 +730,9 @@ class MaintenanceListCardEditor extends HTMLElement {
       const form = document.createElement("ha-form");
       form.schema = LIST_EDITOR_SCHEMA;
       form.computeLabel = (s) =>
-        ({ hide_ok: "Hide OK trackers" }[s.name] || s.name);
+        ({ hide_ok: "Hide OK trackers", confirm: "Confirm before mark done" }[
+          s.name
+        ] || s.name);
       form.addEventListener("value-changed", (e) => {
         this._config = { ...this._config, ...e.detail.value };
         this.dispatchEvent(
@@ -653,6 +749,7 @@ class MaintenanceListCardEditor extends HTMLElement {
     this._form.hass = this._hass;
     this._form.data = {
       hide_ok: this._config.hide_ok ?? false,
+      confirm: this._config.confirm ?? true,
     };
   }
 }
@@ -671,6 +768,84 @@ function _counterText(r) {
   return r.threshold
     ? `${fmt(r.counter)} / ${fmt(r.threshold)} ${r.unit}`.trim()
     : `${fmt(r.counter)} ${r.unit}`.trim();
+}
+
+function _confirmDialog(_dispatchEl, text, title) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const settle = (v) => {
+      if (settled) return;
+      settled = true;
+      try {
+        dialog.close?.();
+      } catch (_) {}
+      setTimeout(() => dialog.remove(), 200);
+      resolve(v);
+    };
+
+    const dialog = document.createElement("ha-dialog");
+    dialog.heading = title || "Confirm";
+    dialog.open = true;
+    // mwc-dialog: pressing Enter triggers the button whose dialogAction matches
+    // defaultAction. Assigning "ok" here makes Enter confirm.
+    dialog.defaultAction = "ok";
+
+    const body = document.createElement("div");
+    body.textContent = text;
+    body.style.padding = "8px 0";
+    dialog.appendChild(body);
+
+    const cancel = document.createElement("ha-button");
+    cancel.setAttribute("slot", "secondaryAction");
+    cancel.setAttribute("dialogAction", "cancel");
+    cancel.setAttribute("appearance", "plain");
+    cancel.textContent = "Cancel";
+    cancel.addEventListener("click", () => settle(false));
+    dialog.appendChild(cancel);
+
+    const ok = document.createElement("ha-button");
+    ok.setAttribute("slot", "primaryAction");
+    ok.setAttribute("dialogAction", "ok");
+    ok.setAttribute("dialogInitialFocus", "");
+    ok.textContent = "Mark done";
+    ok.addEventListener("click", () => settle(true));
+    dialog.appendChild(ok);
+
+    // mwc-dialog doesn't wire Enter → default action; handle it ourselves.
+    dialog.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" && !ev.shiftKey && !ev.ctrlKey && !ev.metaKey) {
+        ev.preventDefault();
+        settle(true);
+      }
+    });
+
+    dialog.addEventListener("closed", (ev) => {
+      settle(ev.detail?.action === "ok");
+    });
+    document.body.appendChild(dialog);
+  });
+}
+
+async function _markDone(dispatchEl, hass, entityId, confirmOpt) {
+  if (confirmOpt) {
+    const name = hass.states[entityId]?.attributes?.friendly_name || entityId;
+    const msg =
+      typeof confirmOpt === "string"
+        ? confirmOpt
+        : `Mark "${name}" as done?`;
+    const ok = await _confirmDialog(dispatchEl, msg, "Maintenance");
+    if (!ok) return;
+  }
+  try {
+    await hass.callService(
+      "maintenance",
+      "mark_done",
+      {},
+      { entity_id: entityId }
+    );
+  } catch (e) {
+    console.error("[maintenance-card] mark_done failed:", e);
+  }
 }
 
 function _relativeDue(dueIso, status, hass) {
