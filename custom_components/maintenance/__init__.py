@@ -3,10 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
+from pathlib import Path
 
+from homeassistant.components.frontend import add_extra_js_url
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.typing import ConfigType
 
 from .const import (
     CONF_INTERVAL,
@@ -18,7 +23,12 @@ from .const import (
 )
 from .coordinator import MaintenanceCoordinator, TrackerStore, build_coordinator
 
+_LOGGER = logging.getLogger(__name__)
+
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BUTTON]
+
+CARD_URL_PATH = "/maintenance-tracker/maintenance-card.js"
+CARD_VERSION = "0.1.1"
 
 
 @dataclass
@@ -28,6 +38,22 @@ class MaintenanceRuntimeData:
 
 
 type MaintenanceConfigEntry = ConfigEntry[MaintenanceRuntimeData]
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Register the frontend card. Called once per HA session."""
+    if hass.http is None:
+        return True
+    card_path = Path(__file__).parent / "www" / "maintenance-card.js"
+    if not card_path.is_file():
+        _LOGGER.warning("Maintenance card asset missing at %s", card_path)
+        return True
+    await hass.http.async_register_static_paths(
+        [StaticPathConfig(CARD_URL_PATH, str(card_path), cache_headers=False)]
+    )
+    add_extra_js_url(hass, f"{CARD_URL_PATH}?v={CARD_VERSION}")
+    _LOGGER.debug("Registered maintenance-card at %s", CARD_URL_PATH)
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: MaintenanceConfigEntry) -> bool:

@@ -46,6 +46,19 @@ sensor.oven_cleaning:
     warn_threshold_percent: 90
 ```
 
+## Lovelace card
+
+A custom card ships with the integration and auto-registers on startup — no manual resource setup required.
+
+Add it via the visual editor: **Add card → Custom: Maintenance Tracker → pick a tracker sensor**. Or in YAML:
+
+```yaml
+type: custom:maintenance-card
+entity: sensor.oven_filter
+```
+
+The card shows the tracker's name, a progress bar in the state color (green / orange / red for ok / due soon / overdue), the counter over the threshold, and the estimated due date as a relative time (e.g. "due in 3 months", "3 days ago" when overdue). Clicking the tile opens the entity's more-info dialog.
+
 ## Services
 
 - `maintenance.mark_done` — mark target tracker(s) done. Optional `date` field (defaults to now).
