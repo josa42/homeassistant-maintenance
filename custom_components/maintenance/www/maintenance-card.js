@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.2.2";
+const CARD_VERSION = "0.2.3";
 
 const STATE_COLOR = {
   ok: "var(--success-color, #4caf50)",
@@ -470,7 +470,15 @@ class MaintenanceListCard extends HTMLElement {
         <div class="list"></div>
         <style>
           :host { display: block; }
-          ha-card { padding: 8px 0; }
+          ha-card {
+            padding: 0;
+            height: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+          }
+          .list { display: flex; flex-direction: column; min-height: 0; }
           .empty {
             padding: 12px 16px;
             color: var(--secondary-text-color);
@@ -478,10 +486,11 @@ class MaintenanceListCard extends HTMLElement {
           .row {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 8px 16px;
+            gap: 10px;
+            padding: 6px 12px;
             cursor: pointer;
             min-width: 0;
+            box-sizing: border-box;
           }
           .row:hover { background: var(--divider-color); }
           .row:focus { outline: none; }
@@ -515,7 +524,7 @@ class MaintenanceListCard extends HTMLElement {
             min-width: 0;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 2px;
           }
           .line {
             display: flex;
@@ -527,27 +536,30 @@ class MaintenanceListCard extends HTMLElement {
           .name {
             font-weight: 500;
             color: var(--primary-text-color);
+            font-size: 0.95em;
+            line-height: 1.2;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
           }
           .due, .counter {
             color: var(--secondary-text-color);
-            font-size: 0.85em;
+            font-size: 0.78em;
+            line-height: 1.2;
             white-space: nowrap;
             flex-shrink: 0;
           }
           .progress-bar {
             flex: 1;
-            height: 6px;
+            height: 4px;
             background: var(--divider-color);
-            border-radius: 3px;
+            border-radius: 2px;
             overflow: hidden;
             min-width: 30px;
           }
           .progress-fill {
             height: 100%;
-            border-radius: 3px;
+            border-radius: 2px;
             background: var(--state-color);
             transition: width 0.3s ease, background 0.3s ease;
           }
