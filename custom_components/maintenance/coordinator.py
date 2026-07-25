@@ -29,6 +29,7 @@ from .const import (
     CONF_THRESHOLD_COUNT,
     CONF_THRESHOLD_UNIT,
     CONF_TO_STATE,
+    CONF_WARN_DAYS_BEFORE,
     CONF_WARN_THRESHOLD_PERCENT,
     CRITERION_ENTITY_ON_DURATION,
     CRITERION_ENTITY_USAGE_COUNT,
@@ -39,6 +40,7 @@ from .const import (
     DEFAULT_ON_STATE,
     DEFAULT_THRESHOLD_UNIT,
     DEFAULT_TO_STATE,
+    DEFAULT_WARN_DAYS_BEFORE,
     DEFAULT_WARN_THRESHOLD_PERCENT,
     DOMAIN,
     MONTH_ANY,
@@ -431,6 +433,9 @@ class RecurringDateCoordinator(MaintenanceCoordinator):
             self.month: int | None = None
         else:
             self.month = int(raw_month)
+        self.warn_days_before: int = int(
+            self.config.get(CONF_WARN_DAYS_BEFORE, DEFAULT_WARN_DAYS_BEFORE)
+        )
 
     @staticmethod
     def _clamp_date(year: int, month: int, day: int) -> date:
@@ -497,7 +502,12 @@ class RecurringDateCoordinator(MaintenanceCoordinator):
         if last_done is None or last_done < prev_due:
             state = STATE_OVERDUE
         else:
-            state = self._state_from_progress(progress)
+            # DUE_SOON kicks in `warn_days_before` days before the next date.
+            days_until_next = (next_due - now).total_seconds() / 86400
+            if days_until_next <= self.warn_days_before:
+                state = STATE_DUE_SOON
+            else:
+                state = STATE_OK
 
         return MaintenanceData(
             state=state,

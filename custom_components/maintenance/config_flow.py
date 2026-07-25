@@ -32,6 +32,7 @@ from .const import (
     CONF_THRESHOLD_COUNT,
     CONF_THRESHOLD_UNIT,
     CONF_TO_STATE,
+    CONF_WARN_DAYS_BEFORE,
     CONF_WARN_THRESHOLD_PERCENT,
     CRITERION_ENTITY_ON_DURATION,
     CRITERION_ENTITY_USAGE_COUNT,
@@ -42,6 +43,7 @@ from .const import (
     DEFAULT_ON_STATE,
     DEFAULT_THRESHOLD_UNIT,
     DEFAULT_TO_STATE,
+    DEFAULT_WARN_DAYS_BEFORE,
     DEFAULT_WARN_THRESHOLD_PERCENT,
     DOMAIN,
     DURATION_UNITS,
@@ -114,7 +116,9 @@ _CRITERION_SCHEMAS: dict[str, vol.Schema] = {
                     mode=selector.SelectSelectorMode.DROPDOWN,
                 )
             ),
-            vol.Required(CONF_WARN_THRESHOLD_PERCENT, default=DEFAULT_WARN_THRESHOLD_PERCENT): _WARN_SELECTOR,
+            vol.Required(CONF_WARN_DAYS_BEFORE, default=DEFAULT_WARN_DAYS_BEFORE): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, step=1, mode=selector.NumberSelectorMode.BOX)
+            ),
         }
     ),
 }

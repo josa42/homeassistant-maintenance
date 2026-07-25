@@ -11,7 +11,7 @@ from custom_components.maintenance.const import (
     CONF_DAY_OF_MONTH,
     CONF_MONTH_OF_YEAR,
     CONF_NAME,
-    CONF_WARN_THRESHOLD_PERCENT,
+    CONF_WARN_DAYS_BEFORE,
     CRITERION_RECURRING_DATE,
     MONTH_ANY,
     STATE_DUE_SOON,
@@ -22,43 +22,44 @@ from custom_components.maintenance.const import (
 from .common import make_coordinator
 
 
-def _monthly(day: int = 5) -> dict:
+def _monthly(day: int = 5, warn_days: int = 3) -> dict:
     return {
         CONF_CRITERION: CRITERION_RECURRING_DATE,
         CONF_NAME: "Monthly",
         CONF_DAY_OF_MONTH: day,
         CONF_MONTH_OF_YEAR: MONTH_ANY,
-        CONF_WARN_THRESHOLD_PERCENT: 90,
+        CONF_WARN_DAYS_BEFORE: warn_days,
     }
 
 
-def _yearly(day: int, month: int) -> dict:
+def _yearly(day: int, month: int, warn_days: int = 3) -> dict:
     return {
         CONF_CRITERION: CRITERION_RECURRING_DATE,
         CONF_NAME: "Yearly",
         CONF_DAY_OF_MONTH: day,
         CONF_MONTH_OF_YEAR: str(month),
-        CONF_WARN_THRESHOLD_PERCENT: 90,
+        CONF_WARN_DAYS_BEFORE: warn_days,
     }
 
 
 async def test_monthly_due_is_next_5th(hass):
     with freeze_time(datetime(2026, 8, 5, 10, 0, tzinfo=timezone.utc)):
-        coord = await make_coordinator(hass, "t1", _monthly(5))
+        coord = await make_coordinator(hass, "t1", _monthly(5, warn_days=3))
         await coord.async_mark_done()
-    # After marking done on Aug 5, next occurrence should be Sep 5.
     assert coord.data.estimated_due_date.date() == datetime(2026, 9, 5).date()
     assert coord.data.state == STATE_OK
 
+    # 4 days before next → still OK (warn = 3 days).
     with freeze_time(datetime(2026, 9, 1, tzinfo=timezone.utc)):
         await coord.async_refresh()
-        # 27 days after mark-done, 31-day interval → ~87% → still ok
         assert coord.data.state == STATE_OK
 
-    with freeze_time(datetime(2026, 9, 4, 12, tzinfo=timezone.utc)):
+    # 2 days before next → DUE_SOON.
+    with freeze_time(datetime(2026, 9, 3, tzinfo=timezone.utc)):
         await coord.async_refresh()
         assert coord.data.state == STATE_DUE_SOON
 
+    # After the next date without marking → OVERDUE.
     with freeze_time(datetime(2026, 9, 6, tzinfo=timezone.utc)):
         await coord.async_refresh()
         assert coord.data.state == STATE_OVERDUE
