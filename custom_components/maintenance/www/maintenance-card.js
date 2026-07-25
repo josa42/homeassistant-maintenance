@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.2.1";
+const CARD_VERSION = "0.2.2";
 
 const STATE_COLOR = {
   ok: "var(--success-color, #4caf50)",
@@ -317,7 +317,7 @@ const STATE_RANK = { overdue: 0, due_soon: 1, ok: 2 };
 
 class MaintenanceListCard extends HTMLElement {
   static getStubConfig() {
-    return { title: "Maintenance", hide_ok: false };
+    return { hide_ok: false };
   }
 
   static async getConfigElement() {
@@ -326,7 +326,7 @@ class MaintenanceListCard extends HTMLElement {
   }
 
   setConfig(config) {
-    this._config = { title: "Maintenance", hide_ok: false, ...(config || {}) };
+    this._config = { hide_ok: false, ...(config || {}) };
     if (this._hass) this._update();
   }
 
@@ -343,7 +343,7 @@ class MaintenanceListCard extends HTMLElement {
     const rows = Math.max(1, (this._rows || []).length);
     return {
       grid_columns: 4,
-      grid_rows: rows + (this._config?.title !== "" ? 1 : 0),
+      grid_rows: rows,
       grid_min_columns: 2,
       grid_min_rows: 1,
     };
@@ -403,9 +403,6 @@ class MaintenanceListCard extends HTMLElement {
     if (!this._built) this._build();
 
     const rows = this._rows || [];
-    this._els.title.textContent = this._config.title || "";
-    this._els.title.style.display = this._config.title ? "" : "none";
-
     if (rows.length === 0) {
       this._els.list.innerHTML = `<div class="empty">No maintenance trackers configured.</div>`;
       this._scheduleTick();
@@ -470,17 +467,10 @@ class MaintenanceListCard extends HTMLElement {
   _build() {
     this.innerHTML = `
       <ha-card>
-        <div class="header"></div>
         <div class="list"></div>
         <style>
           :host { display: block; }
           ha-card { padding: 8px 0; }
-          .header {
-            padding: 4px 16px 8px;
-            font-weight: 500;
-            font-size: 1.05em;
-            color: var(--primary-text-color);
-          }
           .empty {
             padding: 12px 16px;
             color: var(--secondary-text-color);
@@ -565,7 +555,6 @@ class MaintenanceListCard extends HTMLElement {
       </ha-card>
     `;
     this._els = {
-      title: this.querySelector(".header"),
       list: this.querySelector(".list"),
     };
     this._built = true;
@@ -604,7 +593,6 @@ class MaintenanceListCard extends HTMLElement {
 }
 
 const LIST_EDITOR_SCHEMA = [
-  { name: "title", selector: { text: {} } },
   { name: "hide_ok", selector: { boolean: {} } },
 ];
 
@@ -625,7 +613,7 @@ class MaintenanceListCardEditor extends HTMLElement {
       const form = document.createElement("ha-form");
       form.schema = LIST_EDITOR_SCHEMA;
       form.computeLabel = (s) =>
-        ({ title: "Title", hide_ok: "Hide OK trackers" }[s.name] || s.name);
+        ({ hide_ok: "Hide OK trackers" }[s.name] || s.name);
       form.addEventListener("value-changed", (e) => {
         this._config = { ...this._config, ...e.detail.value };
         this.dispatchEvent(
@@ -641,7 +629,6 @@ class MaintenanceListCardEditor extends HTMLElement {
     }
     this._form.hass = this._hass;
     this._form.data = {
-      title: this._config.title ?? "Maintenance",
       hide_ok: this._config.hide_ok ?? false,
     };
   }
