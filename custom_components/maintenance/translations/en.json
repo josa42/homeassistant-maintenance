@@ -45,7 +45,7 @@
           "name": "Name",
           "day_of_month": "Day of month",
           "month_of_year": "Month",
-          "warn_days_before": "Warn N days before"
+          "warn_threshold_percent": "Warn threshold (%)"
         }
       }
     },

@@ -73,11 +73,8 @@ CONF_THRESHOLD_COUNT: Final = "threshold_count"
 CONF_WARN_THRESHOLD_PERCENT: Final = "warn_threshold_percent"
 CONF_DAY_OF_MONTH: Final = "day_of_month"
 CONF_MONTH_OF_YEAR: Final = "month_of_year"
-CONF_WARN_DAYS_BEFORE: Final = "warn_days_before"
 
 MONTH_ANY: Final = "any"
-
-DEFAULT_WARN_DAYS_BEFORE: Final = 3
 
 DEFAULT_WARN_THRESHOLD_PERCENT: Final = 90
 DEFAULT_ON_STATE: Final = "on"
