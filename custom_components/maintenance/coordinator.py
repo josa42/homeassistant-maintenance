@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+import calendar
 from dataclasses import asdict, dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 import logging
 from typing import Any
 
@@ -16,9 +17,11 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_CRITERION,
+    CONF_DAY_OF_MONTH,
     CONF_FROM_STATE,
     CONF_INTERVAL,
     CONF_INTERVAL_UNIT,
+    CONF_MONTH_OF_YEAR,
     CONF_NAME,
     CONF_ON_STATE,
     CONF_TARGET_ENTITY,
@@ -29,6 +32,7 @@ from .const import (
     CONF_WARN_THRESHOLD_PERCENT,
     CRITERION_ENTITY_ON_DURATION,
     CRITERION_ENTITY_USAGE_COUNT,
+    CRITERION_RECURRING_DATE,
     CRITERION_TIME_ELAPSED,
     DEFAULT_FROM_STATE,
     DEFAULT_INTERVAL_UNIT,
@@ -37,9 +41,11 @@ from .const import (
     DEFAULT_TO_STATE,
     DEFAULT_WARN_THRESHOLD_PERCENT,
     DOMAIN,
+    MONTH_ANY,
     STATE_DUE_SOON,
     STATE_OK,
     STATE_OVERDUE,
+    UNIT_DAYS,
     UNIT_SECONDS,
     UNIT_USES,
 )
@@ -414,6 +420,67 @@ class EntityUsageCountCoordinator(MaintenanceCoordinator):
         return now + timedelta(seconds=remaining / rate)
 
 
+class RecurringDateCoordinator(MaintenanceCoordinator):
+    """Due on a recurring calendar date (every Nth of month, or every Nth of MonthName)."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.day: int = int(self.config[CONF_DAY_OF_MONTH])
+        raw_month = self.config.get(CONF_MONTH_OF_YEAR)
+        if raw_month in (None, MONTH_ANY, "", 0):
+            self.month: int | None = None
+        else:
+            self.month = int(raw_month)
+
+    @staticmethod
+    def _clamp_date(year: int, month: int, day: int) -> date:
+        """Clamp day to the last valid day of the month (e.g. Feb 30 → Feb 28/29)."""
+        last_day = calendar.monthrange(year, month)[1]
+        return date(year, month, min(day, last_day))
+
+    def _next_occurrence(self, after: datetime) -> datetime:
+        """Return the next scheduled datetime strictly after ``after`` (UTC midnight)."""
+        after_date = after.date()
+        if self.month is not None:
+            candidate = self._clamp_date(after_date.year, self.month, self.day)
+            if candidate <= after_date:
+                candidate = self._clamp_date(after_date.year + 1, self.month, self.day)
+        else:
+            year, month = after_date.year, after_date.month
+            candidate = self._clamp_date(year, month, self.day)
+            if candidate <= after_date:
+                month += 1
+                if month > 12:
+                    month = 1
+                    year += 1
+                candidate = self._clamp_date(year, month, self.day)
+        return datetime.combine(candidate, datetime.min.time(), tzinfo=after.tzinfo)
+
+    def _compute(self) -> MaintenanceData:
+        last_done = self.persisted.last_done_date
+        now = dt_util.utcnow()
+        reference = last_done if last_done else (now - timedelta(seconds=1))
+        due = self._next_occurrence(reference)
+
+        interval_sec = (due - reference).total_seconds()
+        elapsed_sec = (now - reference).total_seconds() if last_done else 0.0
+        progress = (elapsed_sec / interval_sec * 100) if interval_sec > 0 else 0.0
+        counter_days = elapsed_sec / 86400 if last_done else 0.0
+        threshold_days = interval_sec / 86400 if interval_sec > 0 else 0.0
+
+        return MaintenanceData(
+            state=self._state_from_progress(progress),
+            counter=round(counter_days, 2),
+            counter_unit=UNIT_DAYS,
+            progress=round(progress, 1),
+            threshold=round(threshold_days, 2),
+            last_done_date=last_done,
+            estimated_due_date=due,
+            criterion=CRITERION_RECURRING_DATE,
+            warn_threshold_percent=self.warn_threshold_percent,
+        )
+
+
 def build_coordinator(
     hass: HomeAssistant,
     entry_id: str,
@@ -429,4 +496,6 @@ def build_coordinator(
         return EntityOnDurationCoordinator(hass, entry_id, tracker_id, config, store)
     if criterion == CRITERION_ENTITY_USAGE_COUNT:
         return EntityUsageCountCoordinator(hass, entry_id, tracker_id, config, store)
+    if criterion == CRITERION_RECURRING_DATE:
+        return RecurringDateCoordinator(hass, entry_id, tracker_id, config, store)
     raise ValueError(f"Unknown criterion: {criterion}")

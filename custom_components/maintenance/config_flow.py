@@ -20,9 +20,11 @@ from homeassistant.helpers import selector
 
 from .const import (
     CONF_CRITERION,
+    CONF_DAY_OF_MONTH,
     CONF_FROM_STATE,
     CONF_INTERVAL,
     CONF_INTERVAL_UNIT,
+    CONF_MONTH_OF_YEAR,
     CONF_NAME,
     CONF_ON_STATE,
     CONF_TARGET_ENTITY,
@@ -33,6 +35,7 @@ from .const import (
     CONF_WARN_THRESHOLD_PERCENT,
     CRITERION_ENTITY_ON_DURATION,
     CRITERION_ENTITY_USAGE_COUNT,
+    CRITERION_RECURRING_DATE,
     CRITERION_TIME_ELAPSED,
     DEFAULT_FROM_STATE,
     DEFAULT_INTERVAL_UNIT,
@@ -42,6 +45,7 @@ from .const import (
     DEFAULT_WARN_THRESHOLD_PERCENT,
     DOMAIN,
     DURATION_UNITS,
+    MONTH_ANY,
 )
 
 _WARN_SELECTOR = selector.NumberSelector(
@@ -93,6 +97,26 @@ _CRITERION_SCHEMAS: dict[str, vol.Schema] = {
             vol.Required(CONF_WARN_THRESHOLD_PERCENT, default=DEFAULT_WARN_THRESHOLD_PERCENT): _WARN_SELECTOR,
         }
     ),
+    CRITERION_RECURRING_DATE: vol.Schema(
+        {
+            vol.Required(CONF_NAME): _NAME_SELECTOR,
+            vol.Required(CONF_DAY_OF_MONTH): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=1, max=31, step=1, mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Required(CONF_MONTH_OF_YEAR, default=MONTH_ANY): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=[
+                        MONTH_ANY,
+                        "1", "2", "3", "4", "5", "6",
+                        "7", "8", "9", "10", "11", "12",
+                    ],
+                    translation_key="month_of_year",
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                )
+            ),
+            vol.Required(CONF_WARN_THRESHOLD_PERCENT, default=DEFAULT_WARN_THRESHOLD_PERCENT): _WARN_SELECTOR,
+        }
+    ),
 }
 
 
@@ -123,6 +147,7 @@ class MaintenanceConfigFlow(ConfigFlow, domain=DOMAIN):
                                 CRITERION_TIME_ELAPSED,
                                 CRITERION_ENTITY_ON_DURATION,
                                 CRITERION_ENTITY_USAGE_COUNT,
+                                CRITERION_RECURRING_DATE,
                             ],
                             translation_key="criterion",
                             mode=selector.SelectSelectorMode.DROPDOWN,
@@ -153,6 +178,11 @@ class MaintenanceConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         return await self._async_handle_details(CRITERION_ENTITY_USAGE_COUNT, user_input)
+
+    async def async_step_recurring_date(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        return await self._async_handle_details(CRITERION_RECURRING_DATE, user_input)
 
     async def _async_show_details_step(
         self, existing_data: dict[str, Any] | None = None

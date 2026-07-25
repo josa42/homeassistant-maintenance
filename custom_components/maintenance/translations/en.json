@@ -38,6 +38,15 @@
           "threshold_count": "Threshold (uses)",
           "warn_threshold_percent": "Warn threshold (%)"
         }
+      },
+      "recurring_date": {
+        "title": "Recurring date",
+        "data": {
+          "name": "Name",
+          "day_of_month": "Day of month",
+          "month_of_year": "Month",
+          "warn_threshold_percent": "Warn threshold (%)"
+        }
       }
     },
     "abort": {
@@ -57,7 +66,8 @@
       "options": {
         "time_elapsed": "Time elapsed",
         "entity_on_duration": "Entity on-duration",
-        "entity_usage_count": "Entity usage count"
+        "entity_usage_count": "Entity usage count",
+        "recurring_date": "Recurring date"
       }
     },
     "duration_unit": {
@@ -68,6 +78,23 @@
         "weeks": "Weeks",
         "months": "Months",
         "years": "Years"
+      }
+    },
+    "month_of_year": {
+      "options": {
+        "any": "Every month",
+        "1": "January",
+        "2": "February",
+        "3": "March",
+        "4": "April",
+        "5": "May",
+        "6": "June",
+        "7": "July",
+        "8": "August",
+        "9": "September",
+        "10": "October",
+        "11": "November",
+        "12": "December"
       }
     }
   },
