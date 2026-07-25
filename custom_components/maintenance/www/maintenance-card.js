@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.2.0";
+const CARD_VERSION = "0.2.1";
 
 const STATE_COLOR = {
   ok: "var(--success-color, #4caf50)",
@@ -37,6 +37,16 @@ class MaintenanceCard extends HTMLElement {
 
   getCardSize() {
     return 1;
+  }
+
+  getLayoutOptions() {
+    return {
+      grid_columns: 2,
+      grid_rows: 1,
+      grid_min_columns: 2,
+      grid_min_rows: 1,
+      grid_max_rows: 2,
+    };
   }
 
   connectedCallback() {
@@ -135,10 +145,17 @@ class MaintenanceCard extends HTMLElement {
         </div>
         <style>
           :host { display: block; }
-          ha-card { padding: 12px; cursor: pointer; box-sizing: border-box; }
-          .tile { display: flex; align-items: center; gap: 12px; min-width: 0; }
+          ha-card {
+            padding: 6px 12px;
+            cursor: pointer;
+            box-sizing: border-box;
+            height: 100%;
+            display: flex;
+            align-items: center;
+          }
+          .tile { display: flex; align-items: center; gap: 10px; min-width: 0; width: 100%; }
           .icon-container {
-            position: relative; width: 40px; height: 40px; flex-shrink: 0;
+            position: relative; width: 34px; height: 34px; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
           }
           .icon-bg {
@@ -146,27 +163,27 @@ class MaintenanceCard extends HTMLElement {
             background: var(--state-color); opacity: 0.2;
           }
           ha-icon {
-            position: relative; color: var(--state-color); --mdc-icon-size: 24px;
+            position: relative; color: var(--state-color); --mdc-icon-size: 22px;
           }
-          .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+          .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
           .row {
             display: flex; align-items: center; justify-content: space-between;
             gap: 8px; min-width: 0;
           }
           .name {
-            font-weight: 500; color: var(--primary-text-color);
-            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            font-weight: 500; color: var(--primary-text-color); font-size: 0.95em;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2;
           }
           .due, .counter {
-            color: var(--secondary-text-color); font-size: 0.85em;
+            color: var(--secondary-text-color); font-size: 0.78em; line-height: 1.2;
             white-space: nowrap; flex-shrink: 0;
           }
           .progress-bar {
-            flex: 1; height: 6px; background: var(--divider-color);
-            border-radius: 3px; overflow: hidden; min-width: 30px;
+            flex: 1; height: 4px; background: var(--divider-color);
+            border-radius: 2px; overflow: hidden; min-width: 30px;
           }
           .progress-fill {
-            height: 100%; border-radius: 3px; background: var(--state-color);
+            height: 100%; border-radius: 2px; background: var(--state-color);
             transition: width 0.3s ease, background 0.3s ease;
           }
           .tile:focus { outline: none; }
@@ -320,6 +337,16 @@ class MaintenanceListCard extends HTMLElement {
 
   getCardSize() {
     return Math.max(1, (this._rows || []).length);
+  }
+
+  getLayoutOptions() {
+    const rows = Math.max(1, (this._rows || []).length);
+    return {
+      grid_columns: 4,
+      grid_rows: rows + (this._config?.title !== "" ? 1 : 0),
+      grid_min_columns: 2,
+      grid_min_rows: 1,
+    };
   }
 
   connectedCallback() {
