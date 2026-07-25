@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.3.23";
+const CARD_VERSION = "0.3.24";
 
 const STATE_COLOR = {
   ok: "var(--success-color, #4caf50)",
@@ -11,6 +11,125 @@ const STATE_ICON = {
   due_soon: "mdi:clock-outline",
   overdue: "mdi:alert-circle-outline",
 };
+
+const SECONDS_PER_UNIT = {
+  minutes: 60,
+  hours: 3600,
+  days: 86400,
+  weeks: 604800,
+  months: 2629800,
+  years: 31557600,
+};
+
+const EN_FALLBACK = {
+  "component.maintenance.card.confirm_title": "Maintenance",
+  "component.maintenance.card.confirm_body": 'Mark "{name}" as done?',
+  "component.maintenance.card.confirm_ok": "Mark done",
+  "component.maintenance.card.confirm_cancel": "Cancel",
+  "component.maintenance.card.mark_done_action": "Mark done",
+  "component.maintenance.card.empty_no_trackers":
+    "No maintenance trackers configured.",
+  "component.maintenance.card.empty_all_ok_one":
+    "Nothing due — 1 tracker is up to date.",
+  "component.maintenance.card.empty_all_ok_other":
+    "Nothing due — all {count} trackers are up to date.",
+  "component.maintenance.card.units.uses": "uses",
+  "component.maintenance.card.editor.entity": "Maintenance tracker",
+  "component.maintenance.card.editor.confirm": "Confirm before mark done",
+  "component.maintenance.card.editor.hide_ok": "Hide OK trackers",
+  "component.maintenance.card.editor.hide_when_empty": "Hide card when empty",
+  "component.maintenance.card.editor.separate_items":
+    "Render each item as its own card",
+  "component.maintenance.entity.sensor.tracker.state.ok": "OK",
+  "component.maintenance.entity.sensor.tracker.state.due_soon": "Due soon",
+  "component.maintenance.entity.sensor.tracker.state.overdue": "Overdue",
+};
+
+function _t(hass, key, params) {
+  const raw =
+    (hass && hass.localize && hass.localize(key)) || EN_FALLBACK[key] || key;
+  if (!params) return raw;
+  return raw.replace(/\{(\w+)\}/g, (_, k) =>
+    params[k] != null ? String(params[k]) : ""
+  );
+}
+
+// Locale-aware duration display. Never emits decimals: minute/hour counters
+// render as M:SS / H:MM; day+ counters render as two-component text like
+// "3d 12h" using Intl.NumberFormat's unit style so it localises properly
+// (e.g. "3 T 12 Std." in German).
+function _fmtDuration(hass, value, unit) {
+  const lang = (hass && hass.language) || "en";
+  const nfInt = new Intl.NumberFormat(lang, { maximumFractionDigits: 0 });
+
+  if (unit === "uses") {
+    return `${nfInt.format(Math.round(value))} ${_t(
+      hass,
+      "component.maintenance.card.units.uses"
+    )}`;
+  }
+
+  if (!SECONDS_PER_UNIT[unit]) return nfInt.format(value);
+
+  const totalSec = value * SECONDS_PER_UNIT[unit];
+  const nfUnit = (n, u) =>
+    new Intl.NumberFormat(lang, {
+      style: "unit",
+      unit: u,
+      unitDisplay: "narrow",
+      maximumFractionDigits: 0,
+    }).format(n);
+
+  if (unit === "minutes") {
+    const m = Math.floor(totalSec / 60);
+    const s = Math.floor(totalSec % 60);
+    return `${nfInt.format(m)}:${String(s).padStart(2, "0")}`;
+  }
+  if (unit === "hours") {
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    return `${nfInt.format(h)}:${String(m).padStart(2, "0")}`;
+  }
+
+  const layouts = {
+    days: [["day", 86400], ["hour", 3600]],
+    weeks: [["week", 604800], ["day", 86400]],
+    months: [["month", 2629800], ["day", 86400]],
+    years: [["year", 31557600], ["month", 2629800]],
+  };
+  const [primary, secondary] = layouts[unit];
+  const primaryVal = Math.floor(totalSec / primary[1]);
+  const secondaryVal = Math.floor((totalSec - primaryVal * primary[1]) / secondary[1]);
+  const parts = [];
+  if (primaryVal > 0) parts.push(nfUnit(primaryVal, primary[0]));
+  if (secondaryVal > 0 || parts.length === 0)
+    parts.push(nfUnit(secondaryVal, secondary[0]));
+  return parts.join(" ");
+}
+
+function _stateLabelOf(hass, status) {
+  return _t(hass, `component.maintenance.entity.sensor.tracker.state.${status}`);
+}
+
+function _relativeDueText(hass, dueIso, status) {
+  if (!dueIso) return _stateLabelOf(hass, status);
+  const due = new Date(dueIso);
+  if (isNaN(due.getTime())) return _stateLabelOf(hass, status);
+  const diffSec = (due.getTime() - Date.now()) / 1000;
+  if (diffSec <= 0 && status !== "overdue") return _stateLabelOf(hass, status);
+  if (diffSec > 0 && status === "overdue") return _stateLabelOf(hass, status);
+  const abs = Math.abs(diffSec);
+  let value, unit;
+  if (abs < 60) { value = diffSec; unit = "second"; }
+  else if (abs < 3600) { value = diffSec / 60; unit = "minute"; }
+  else if (abs < 86400) { value = diffSec / 3600; unit = "hour"; }
+  else if (abs < 2592000) { value = diffSec / 86400; unit = "day"; }
+  else if (abs < 31536000) { value = diffSec / 2592000; unit = "month"; }
+  else { value = diffSec / 31557600; unit = "year"; }
+  const lang = (hass && hass.language) || "en";
+  const rtf = new Intl.RelativeTimeFormat(lang, { numeric: "auto" });
+  return rtf.format(Math.round(value), unit);
+}
 
 class MaintenanceCard extends HTMLElement {
   static getStubConfig() {
@@ -88,10 +207,14 @@ class MaintenanceCard extends HTMLElement {
 
     this.style.setProperty("--state-color", color);
     this._els.name.textContent = name;
-    this._els.due.textContent = this._relativeDue(attrs.estimated_due_date, status);
+    this._els.due.textContent = _relativeDueText(
+      this._hass,
+      attrs.estimated_due_date,
+      status
+    );
     this._els.counter.textContent = threshold
-      ? `${this._fmt(counter)} / ${this._fmt(threshold)} ${unit}`.trim()
-      : `${this._fmt(counter)} ${unit}`.trim();
+      ? `${_fmtDuration(this._hass, counter, unit)} / ${_fmtDuration(this._hass, threshold, unit)}`
+      : _fmtDuration(this._hass, counter, unit);
     this._els.fill.style.width = `${progress}%`;
     this._els.icon.setAttribute("icon", icon);
 
@@ -117,7 +240,8 @@ class MaintenanceCard extends HTMLElement {
     if (!this.isConnected || !this._hass || !this._config) return;
     const state = this._hass.states[this._config.entity];
     if (!state || !this._built) return;
-    this._els.due.textContent = this._relativeDue(
+    this._els.due.textContent = _relativeDueText(
+      this._hass,
       state.attributes.estimated_due_date,
       state.state
     );
@@ -232,7 +356,7 @@ class MaintenanceCard extends HTMLElement {
     iconEl.setAttribute("role", "button");
     iconEl.setAttribute("tabindex", "0");
     iconEl.style.cursor = "pointer";
-    iconEl.title = "Mark done";
+    iconEl.title = _t(this._hass, "component.maintenance.card.mark_done_action");
     const markDone = (e) => {
       e.stopPropagation();
       _markDone(this, this._hass, this._config.entity, this._config.confirm ?? true);
@@ -253,42 +377,6 @@ class MaintenanceCard extends HTMLElement {
     this._built = false;
   }
 
-  _fmt(n) {
-    if (!Number.isFinite(n)) return "";
-    return Number.isInteger(n) ? String(n) : n.toFixed(1);
-  }
-
-  _relativeDue(dueIso, status) {
-    if (!dueIso) return this._stateLabel(status);
-    const due = new Date(dueIso);
-    if (isNaN(due.getTime())) return this._stateLabel(status);
-    const diffSec = (due.getTime() - Date.now()) / 1000;
-    if (diffSec <= 0 && status !== "overdue") return this._stateLabel(status);
-    if (diffSec > 0 && status === "overdue") return this._stateLabel(status);
-
-    const abs = Math.abs(diffSec);
-    let value, unit;
-    if (abs < 60) { value = diffSec; unit = "second"; }
-    else if (abs < 3600) { value = diffSec / 60; unit = "minute"; }
-    else if (abs < 86400) { value = diffSec / 3600; unit = "hour"; }
-    else if (abs < 2592000) { value = diffSec / 86400; unit = "day"; }
-    else if (abs < 31536000) { value = diffSec / 2592000; unit = "month"; }
-    else { value = diffSec / 31557600; unit = "year"; }
-    const lang = (this._hass && this._hass.language) || "en";
-    const rtf = new Intl.RelativeTimeFormat(lang, { numeric: "auto" });
-    return rtf.format(Math.round(value), unit);
-  }
-
-  _stateLabel(status) {
-    if (this._hass && this._hass.localize) {
-      const key = `component.maintenance.entity.sensor.tracker.state.${status}`;
-      const label = this._hass.localize(key);
-      if (label) return label;
-    }
-    return (
-      { ok: "OK", due_soon: "Due soon", overdue: "Overdue" }[status] || ""
-    );
-  }
 }
 
 const EDITOR_SCHEMA = [
@@ -321,9 +409,7 @@ class MaintenanceCardEditor extends HTMLElement {
       const form = document.createElement("ha-form");
       form.schema = EDITOR_SCHEMA;
       form.computeLabel = (s) =>
-        ({ entity: "Maintenance tracker", confirm: "Confirm before mark done" }[
-          s.name
-        ] || s.name);
+        _t(this._hass, `component.maintenance.card.editor.${s.name}`) || s.name;
       form.addEventListener("value-changed", (e) => {
         this._config = { ...this._config, ...e.detail.value };
         this.dispatchEvent(
@@ -469,24 +555,29 @@ class MaintenanceListCard extends HTMLElement {
     if (rows.length === 0) {
       let msg;
       if (this._hiddenCount > 0) {
-        msg = this._hiddenCount === 1
-          ? "Nothing due — 1 tracker is up to date."
-          : `Nothing due — all ${this._hiddenCount} trackers are up to date.`;
+        const key =
+          this._hiddenCount === 1
+            ? "component.maintenance.card.empty_all_ok_one"
+            : "component.maintenance.card.empty_all_ok_other";
+        msg = _t(this._hass, key, { count: this._hiddenCount });
       } else {
-        msg = "No maintenance trackers configured.";
+        msg = _t(this._hass, "component.maintenance.card.empty_no_trackers");
       }
-      this._els.list.innerHTML = `<div class="empty">${msg}</div>`;
+      this._els.list.innerHTML = `<div class="empty">${_escape(msg)}</div>`;
       this._scheduleTick();
       return;
     }
 
+    const markDoneLabel = _escape(
+      _t(this._hass, "component.maintenance.card.mark_done_action")
+    );
     this._els.list.innerHTML = rows
       .map(
         (r, i) => `
         <div class="row" data-idx="${i}" role="button" tabindex="0"
              style="--state-color: ${r.color}">
           <div class="icon-container" role="button" tabindex="0"
-               title="Mark done">
+               title="${markDoneLabel}">
             <div class="icon-bg"></div>
             <ha-icon icon="${r.icon}"></ha-icon>
           </div>
@@ -497,7 +588,7 @@ class MaintenanceListCard extends HTMLElement {
             </div>
             <div class="line bar-line">
               <div class="progress-bar"><div class="progress-fill" style="width:${r.progress}%"></div></div>
-              <span class="counter">${_counterText(r)}</span>
+              <span class="counter">${_escape(_counterText(this._hass, r))}</span>
             </div>
           </div>
         </div>
@@ -509,7 +600,7 @@ class MaintenanceListCard extends HTMLElement {
     this._els.list.querySelectorAll(".due").forEach((el) => {
       const idx = Number(el.dataset.idx);
       const r = rows[idx];
-      el.textContent = _relativeDue(r.dueIso, r.status, this._hass);
+      el.textContent = _relativeDueText(this._hass, r.dueIso, r.status);
     });
 
     // Row click → open more-info. Icon click → mark done.
@@ -738,7 +829,7 @@ class MaintenanceListCard extends HTMLElement {
     this._els.list.querySelectorAll(".due").forEach((el) => {
       const idx = Number(el.dataset.idx);
       const r = rows[idx];
-      if (r) el.textContent = _relativeDue(r.dueIso, r.status, this._hass);
+      if (r) el.textContent = _relativeDueText(this._hass, r.dueIso, r.status);
     });
     this._scheduleTick();
   }
@@ -768,12 +859,7 @@ class MaintenanceListCardEditor extends HTMLElement {
       const form = document.createElement("ha-form");
       form.schema = LIST_EDITOR_SCHEMA;
       form.computeLabel = (s) =>
-        ({
-          hide_ok: "Hide OK trackers",
-          hide_when_empty: "Hide card when empty",
-          separate_items: "Render each item as its own card",
-          confirm: "Confirm before mark done",
-        }[s.name] || s.name);
+        _t(this._hass, `component.maintenance.card.editor.${s.name}`) || s.name;
       form.addEventListener("value-changed", (e) => {
         this._config = { ...this._config, ...e.detail.value };
         this.dispatchEvent(
@@ -805,15 +891,14 @@ function _escape(s) {
   ));
 }
 
-function _counterText(r) {
-  const fmt = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+function _counterText(hass, r) {
   if (!Number.isFinite(r.counter)) return "";
   return r.threshold
-    ? `${fmt(r.counter)} / ${fmt(r.threshold)} ${r.unit}`.trim()
-    : `${fmt(r.counter)} ${r.unit}`.trim();
+    ? `${_fmtDuration(hass, r.counter, r.unit)} / ${_fmtDuration(hass, r.threshold, r.unit)}`
+    : _fmtDuration(hass, r.counter, r.unit);
 }
 
-function _confirmDialog(_dispatchEl, text, title) {
+function _confirmDialog(_dispatchEl, text, title, okLabel, cancelLabel) {
   return new Promise((resolve) => {
     let settled = false;
     const settle = (v) => {
@@ -829,8 +914,6 @@ function _confirmDialog(_dispatchEl, text, title) {
     const dialog = document.createElement("ha-dialog");
     dialog.heading = title || "Confirm";
     dialog.open = true;
-    // mwc-dialog: pressing Enter triggers the button whose dialogAction matches
-    // defaultAction. Assigning "ok" here makes Enter confirm.
     dialog.defaultAction = "ok";
 
     const body = document.createElement("div");
@@ -842,7 +925,7 @@ function _confirmDialog(_dispatchEl, text, title) {
     cancel.setAttribute("slot", "secondaryAction");
     cancel.setAttribute("dialogAction", "cancel");
     cancel.setAttribute("appearance", "plain");
-    cancel.textContent = "Cancel";
+    cancel.textContent = cancelLabel || "Cancel";
     cancel.addEventListener("click", () => settle(false));
     dialog.appendChild(cancel);
 
@@ -850,7 +933,7 @@ function _confirmDialog(_dispatchEl, text, title) {
     ok.setAttribute("slot", "primaryAction");
     ok.setAttribute("dialogAction", "ok");
     ok.setAttribute("dialogInitialFocus", "");
-    ok.textContent = "Mark done";
+    ok.textContent = okLabel || "OK";
     ok.addEventListener("click", () => settle(true));
     dialog.appendChild(ok);
 
@@ -875,8 +958,14 @@ async function _markDone(dispatchEl, hass, entityId, confirmOpt) {
     const msg =
       typeof confirmOpt === "string"
         ? confirmOpt
-        : `Mark "${name}" as done?`;
-    const ok = await _confirmDialog(dispatchEl, msg, "Maintenance");
+        : _t(hass, "component.maintenance.card.confirm_body", { name });
+    const ok = await _confirmDialog(
+      dispatchEl,
+      msg,
+      _t(hass, "component.maintenance.card.confirm_title"),
+      _t(hass, "component.maintenance.card.confirm_ok"),
+      _t(hass, "component.maintenance.card.confirm_cancel")
+    );
     if (!ok) return;
   }
   try {
@@ -889,34 +978,6 @@ async function _markDone(dispatchEl, hass, entityId, confirmOpt) {
   } catch (e) {
     console.error("[maintenance-card] mark_done failed:", e);
   }
-}
-
-function _relativeDue(dueIso, status, hass) {
-  const label = (s) => {
-    if (hass && hass.localize) {
-      const key = `component.maintenance.entity.sensor.tracker.state.${s}`;
-      const t = hass.localize(key);
-      if (t) return t;
-    }
-    return { ok: "OK", due_soon: "Due soon", overdue: "Overdue" }[s] || "";
-  };
-  if (!dueIso) return label(status);
-  const due = new Date(dueIso);
-  if (isNaN(due.getTime())) return label(status);
-  const diffSec = (due.getTime() - Date.now()) / 1000;
-  if (diffSec <= 0 && status !== "overdue") return label(status);
-  if (diffSec > 0 && status === "overdue") return label(status);
-  const abs = Math.abs(diffSec);
-  let value, unit;
-  if (abs < 60) { value = diffSec; unit = "second"; }
-  else if (abs < 3600) { value = diffSec / 60; unit = "minute"; }
-  else if (abs < 86400) { value = diffSec / 3600; unit = "hour"; }
-  else if (abs < 2592000) { value = diffSec / 86400; unit = "day"; }
-  else if (abs < 31536000) { value = diffSec / 2592000; unit = "month"; }
-  else { value = diffSec / 31557600; unit = "year"; }
-  const lang = (hass && hass.language) || "en";
-  const rtf = new Intl.RelativeTimeFormat(lang, { numeric: "auto" });
-  return rtf.format(Math.round(value), unit);
 }
 
 // Register early — before any classes are used elsewhere — to survive races

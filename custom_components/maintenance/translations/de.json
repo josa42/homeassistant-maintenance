@@ -1,0 +1,139 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Wartungstracker",
+        "description": "Wähle das Kriterium, das bestimmt, wann diese Wartungsaufgabe fällig ist.",
+        "data": {
+          "criterion": "Kriterium"
+        }
+      },
+      "time_elapsed": {
+        "title": "Verstrichene Zeit",
+        "data": {
+          "name": "Name",
+          "interval": "Intervall",
+          "interval_unit": "Einheit",
+          "warn_threshold_percent": "Warnschwelle (%)"
+        }
+      },
+      "entity_on_duration": {
+        "title": "Einschaltdauer",
+        "data": {
+          "name": "Name",
+          "target_entity_id": "Ziel-Entität",
+          "on_state": "Zustand für „an“",
+          "threshold": "Schwellenwert",
+          "threshold_unit": "Einheit",
+          "warn_threshold_percent": "Warnschwelle (%)"
+        }
+      },
+      "entity_usage_count": {
+        "title": "Nutzungsanzahl",
+        "data": {
+          "name": "Name",
+          "target_entity_id": "Ziel-Entität",
+          "from_state": "Vom Zustand",
+          "to_state": "Zum Zustand",
+          "threshold_count": "Schwellenwert (Nutzungen)",
+          "warn_threshold_percent": "Warnschwelle (%)"
+        }
+      },
+      "manual": {
+        "title": "Nur manuell",
+        "data": {
+          "name": "Name",
+          "warn_threshold_percent": "Warnschwelle (%)"
+        }
+      }
+    },
+    "abort": {
+      "reconfigure_successful": "Tracker neu konfiguriert."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Tracker bearbeiten",
+        "description": "Passe die Einstellungen dieses Trackers an. Um zu einem anderen Kriterium zu wechseln, lösche den Tracker und lege ihn neu an."
+      }
+    }
+  },
+  "selector": {
+    "criterion": {
+      "options": {
+        "time_elapsed": "Verstrichene Zeit",
+        "entity_on_duration": "Einschaltdauer einer Entität",
+        "entity_usage_count": "Nutzungsanzahl einer Entität",
+        "manual": "Nur manuell"
+      }
+    },
+    "duration_unit": {
+      "options": {
+        "minutes": "Minuten",
+        "hours": "Stunden",
+        "days": "Tage",
+        "weeks": "Wochen",
+        "months": "Monate",
+        "years": "Jahre"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "tracker": {
+        "state": {
+          "ok": "OK",
+          "due_soon": "Bald fällig",
+          "overdue": "Überfällig"
+        },
+        "state_attributes": {
+          "estimated_due_date": { "name": "Voraussichtlich fällig" },
+          "counter": { "name": "Zähler" },
+          "counter_unit": { "name": "Einheit" },
+          "last_done_date": { "name": "Zuletzt erledigt" },
+          "progress": { "name": "Fortschritt" },
+          "criterion": { "name": "Kriterium" },
+          "threshold": { "name": "Schwellenwert" },
+          "warn_threshold_percent": { "name": "Warnschwelle" }
+        }
+      }
+    }
+  },
+  "services": {
+    "mark_done": {
+      "name": "Als erledigt markieren",
+      "description": "Markiert den/die ausgewählten Wartungstracker als soeben erledigt.",
+      "fields": {
+        "date": {
+          "name": "Datum",
+          "description": "Zeitpunkt der Erledigung. Standard ist jetzt."
+        }
+      }
+    },
+    "reset": {
+      "name": "Zähler zurücksetzen",
+      "description": "Setzt den Zähler zurück, ohne das Datum der letzten Erledigung zu ändern."
+    }
+  },
+  "card": {
+    "confirm_title": "Wartung",
+    "confirm_body": "„{name}“ als erledigt markieren?",
+    "confirm_ok": "Als erledigt markieren",
+    "confirm_cancel": "Abbrechen",
+    "mark_done_action": "Als erledigt markieren",
+    "empty_no_trackers": "Keine Wartungstracker konfiguriert.",
+    "empty_all_ok_one": "Nichts fällig — 1 Tracker ist auf dem neuesten Stand.",
+    "empty_all_ok_other": "Nichts fällig — alle {count} Tracker sind auf dem neuesten Stand.",
+    "units": {
+      "uses": "Nutzungen"
+    },
+    "editor": {
+      "entity": "Wartungstracker",
+      "confirm": "Vor dem Erledigen bestätigen",
+      "hide_ok": "OK-Tracker ausblenden",
+      "hide_when_empty": "Karte ausblenden, wenn leer",
+      "separate_items": "Jeden Eintrag als eigene Karte anzeigen"
+    }
+  }
+}

@@ -115,5 +115,25 @@
       "name": "Reset counter",
       "description": "Reset the counter without changing the last-done date."
     }
+  },
+  "card": {
+    "confirm_title": "Maintenance",
+    "confirm_body": "Mark \"{name}\" as done?",
+    "confirm_ok": "Mark done",
+    "confirm_cancel": "Cancel",
+    "mark_done_action": "Mark done",
+    "empty_no_trackers": "No maintenance trackers configured.",
+    "empty_all_ok_one": "Nothing due — 1 tracker is up to date.",
+    "empty_all_ok_other": "Nothing due — all {count} trackers are up to date.",
+    "units": {
+      "uses": "uses"
+    },
+    "editor": {
+      "entity": "Maintenance tracker",
+      "confirm": "Confirm before mark done",
+      "hide_ok": "Hide OK trackers",
+      "hide_when_empty": "Hide card when empty",
+      "separate_items": "Render each item as its own card"
+    }
   }
 }
