@@ -438,8 +438,11 @@ class RecurringDateCoordinator(MaintenanceCoordinator):
         last_day = calendar.monthrange(year, month)[1]
         return date(year, month, min(day, last_day))
 
+    def _to_dt(self, d: date, tz) -> datetime:
+        return datetime.combine(d, datetime.min.time(), tzinfo=tz)
+
     def _next_occurrence(self, after: datetime) -> datetime:
-        """Return the next scheduled datetime strictly after ``after`` (UTC midnight)."""
+        """Return the next scheduled datetime strictly after ``after``."""
         after_date = after.date()
         if self.month is not None:
             candidate = self._clamp_date(after_date.year, self.month, self.day)
@@ -454,28 +457,56 @@ class RecurringDateCoordinator(MaintenanceCoordinator):
                     month = 1
                     year += 1
                 candidate = self._clamp_date(year, month, self.day)
-        return datetime.combine(candidate, datetime.min.time(), tzinfo=after.tzinfo)
+        return self._to_dt(candidate, after.tzinfo)
+
+    def _prev_occurrence(self, at_or_before: datetime) -> datetime:
+        """Return the most recent scheduled datetime ≤ ``at_or_before``."""
+        d = at_or_before.date()
+        if self.month is not None:
+            candidate = self._clamp_date(d.year, self.month, self.day)
+            candidate_dt = self._to_dt(candidate, at_or_before.tzinfo)
+            if candidate_dt > at_or_before:
+                candidate = self._clamp_date(d.year - 1, self.month, self.day)
+                candidate_dt = self._to_dt(candidate, at_or_before.tzinfo)
+            return candidate_dt
+        year, month = d.year, d.month
+        candidate = self._clamp_date(year, month, self.day)
+        candidate_dt = self._to_dt(candidate, at_or_before.tzinfo)
+        if candidate_dt > at_or_before:
+            month -= 1
+            if month < 1:
+                month = 12
+                year -= 1
+            candidate = self._clamp_date(year, month, self.day)
+            candidate_dt = self._to_dt(candidate, at_or_before.tzinfo)
+        return candidate_dt
 
     def _compute(self) -> MaintenanceData:
-        last_done = self.persisted.last_done_date
         now = dt_util.utcnow()
-        reference = last_done if last_done else (now - timedelta(seconds=1))
-        due = self._next_occurrence(reference)
+        prev_due = self._prev_occurrence(now)
+        next_due = self._next_occurrence(now)
 
-        interval_sec = (due - reference).total_seconds()
-        elapsed_sec = (now - reference).total_seconds() if last_done else 0.0
+        interval_sec = (next_due - prev_due).total_seconds()
+        elapsed_sec = (now - prev_due).total_seconds()
         progress = (elapsed_sec / interval_sec * 100) if interval_sec > 0 else 0.0
-        counter_days = elapsed_sec / 86400 if last_done else 0.0
-        threshold_days = interval_sec / 86400 if interval_sec > 0 else 0.0
+        counter_days = elapsed_sec / 86400
+        threshold_days = interval_sec / 86400
+
+        last_done = self.persisted.last_done_date
+        # Overdue if we haven't done the task since the previous scheduled date.
+        if last_done is None or last_done < prev_due:
+            state = STATE_OVERDUE
+        else:
+            state = self._state_from_progress(progress)
 
         return MaintenanceData(
-            state=self._state_from_progress(progress),
+            state=state,
             counter=round(counter_days, 2),
             counter_unit=UNIT_DAYS,
             progress=round(progress, 1),
             threshold=round(threshold_days, 2),
             last_done_date=last_done,
-            estimated_due_date=due,
+            estimated_due_date=next_due,
             criterion=CRITERION_RECURRING_DATE,
             warn_threshold_percent=self.warn_threshold_percent,
         )

@@ -81,3 +81,19 @@ async def test_day_31_clamped_in_february(hass):
         await coord.async_mark_done()
     # Next occurrence should be clamped to Feb 28 (2026 is not a leap year).
     assert coord.data.estimated_due_date.date() == datetime(2026, 2, 28).date()
+
+
+async def test_progress_anchored_to_calendar_regardless_of_mark_done(hass):
+    """Progress must always reflect elapsed time between the previous and next
+    scheduled dates, not between last_done and next scheduled date."""
+    # Mark done LATE (Aug 10) — after the Aug 5 scheduled date.
+    with freeze_time(datetime(2026, 8, 10, tzinfo=timezone.utc)):
+        coord = await make_coordinator(hass, "t4", _monthly(5))
+        await coord.async_mark_done()
+
+    # On Aug 20: prev=Aug 5, next=Sep 5, elapsed=15d, interval=31d → ~48%.
+    with freeze_time(datetime(2026, 8, 20, tzinfo=timezone.utc)):
+        await coord.async_refresh()
+        assert 47 < coord.data.progress < 50, coord.data.progress
+        # Not overdue: last_done (Aug 10) >= prev_due (Aug 5)
+        assert coord.data.state == STATE_OK
