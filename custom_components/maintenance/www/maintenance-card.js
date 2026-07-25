@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.3.21";
+const CARD_VERSION = "0.3.22";
 
 const STATE_COLOR = {
   ok: "var(--success-color, #4caf50)",
@@ -351,7 +351,7 @@ const STATE_RANK = { overdue: 0, due_soon: 1, ok: 2 };
 
 class MaintenanceListCard extends HTMLElement {
   static getStubConfig() {
-    return { hide_ok: false };
+    return { hide_ok: false, hide_when_empty: false };
   }
 
   static async getConfigElement() {
@@ -360,7 +360,7 @@ class MaintenanceListCard extends HTMLElement {
   }
 
   setConfig(config) {
-    this._config = { hide_ok: false, ...(config || {}) };
+    this._config = { hide_ok: false, hide_when_empty: false, ...(config || {}) };
     if (this._hass) this._update();
   }
 
@@ -370,10 +370,22 @@ class MaintenanceListCard extends HTMLElement {
   }
 
   getCardSize() {
+    if (this._isHiddenEmpty()) return 0;
     return Math.max(1, (this._rows || []).length);
   }
 
+  _isHiddenEmpty() {
+    return (
+      !!this._config?.hide_when_empty &&
+      Array.isArray(this._rows) &&
+      this._rows.length === 0
+    );
+  }
+
   getLayoutOptions() {
+    if (this._isHiddenEmpty()) {
+      return { grid_columns: 0, grid_rows: 0, grid_min_columns: 0, grid_min_rows: 0 };
+    }
     const rows = Math.max(1, (this._rows || []).length);
     return {
       grid_columns: 4,
@@ -436,9 +448,17 @@ class MaintenanceListCard extends HTMLElement {
   }
 
   _render() {
+    const rows = this._rows || [];
+
+    // hide_when_empty: fully collapse the card in the section grid.
+    if (rows.length === 0 && this._config.hide_when_empty) {
+      this.style.display = "none";
+      return;
+    }
+    this.style.display = "";
+
     if (!this._built) this._build();
 
-    const rows = this._rows || [];
     if (rows.length === 0) {
       let msg;
       if (this._hiddenCount > 0) {
@@ -579,7 +599,6 @@ class MaintenanceListCard extends HTMLElement {
             border-bottom-left-radius: var(--ha-card-border-radius, 12px);
             border-bottom-right-radius: var(--ha-card-border-radius, 12px);
           }
-          .row:hover { background: var(--divider-color); }
           .row:focus { outline: none; }
           .row::before {
             content: "";
@@ -710,6 +729,7 @@ class MaintenanceListCard extends HTMLElement {
 
 const LIST_EDITOR_SCHEMA = [
   { name: "hide_ok", selector: { boolean: {} } },
+  { name: "hide_when_empty", selector: { boolean: {} } },
   { name: "confirm", selector: { boolean: {} } },
 ];
 
@@ -730,9 +750,11 @@ class MaintenanceListCardEditor extends HTMLElement {
       const form = document.createElement("ha-form");
       form.schema = LIST_EDITOR_SCHEMA;
       form.computeLabel = (s) =>
-        ({ hide_ok: "Hide OK trackers", confirm: "Confirm before mark done" }[
-          s.name
-        ] || s.name);
+        ({
+          hide_ok: "Hide OK trackers",
+          hide_when_empty: "Hide card when empty",
+          confirm: "Confirm before mark done",
+        }[s.name] || s.name);
       form.addEventListener("value-changed", (e) => {
         this._config = { ...this._config, ...e.detail.value };
         this.dispatchEvent(
@@ -749,6 +771,7 @@ class MaintenanceListCardEditor extends HTMLElement {
     this._form.hass = this._hass;
     this._form.data = {
       hide_ok: this._config.hide_ok ?? false,
+      hide_when_empty: this._config.hide_when_empty ?? false,
       confirm: this._config.confirm ?? true,
     };
   }

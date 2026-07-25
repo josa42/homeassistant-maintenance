@@ -66,6 +66,7 @@ A second card, `maintenance-list-card`, auto-discovers all trackers and lists th
 ```yaml
 type: custom:maintenance-list-card
 hide_ok: false          # optional; hide healthy trackers
+hide_when_empty: false  # optional; hide the card entirely when there are no rows to show
 entities:               # optional; override auto-discovery
   - sensor.oven_filter
   - sensor.washer_clean
