@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.2.4";
+const CARD_VERSION = "0.2.5";
 
 const STATE_COLOR = {
   ok: "var(--success-color, #4caf50)",
@@ -371,7 +371,9 @@ class MaintenanceListCard extends HTMLElement {
         );
 
     let rows = entities.map((s) => this._toRow(s));
+    this._totalCount = rows.length;
     if (this._config.hide_ok) rows = rows.filter((r) => r.status !== "ok");
+    this._hiddenCount = this._totalCount - rows.length;
     rows.sort((a, b) => {
       const ra = STATE_RANK[a.status] ?? 3;
       const rb = STATE_RANK[b.status] ?? 3;
@@ -404,7 +406,15 @@ class MaintenanceListCard extends HTMLElement {
 
     const rows = this._rows || [];
     if (rows.length === 0) {
-      this._els.list.innerHTML = `<div class="empty">No maintenance trackers configured.</div>`;
+      let msg;
+      if (this._hiddenCount > 0) {
+        msg = this._hiddenCount === 1
+          ? "Nothing due — 1 tracker is up to date."
+          : `Nothing due — all ${this._hiddenCount} trackers are up to date.`;
+      } else {
+        msg = "No maintenance trackers configured.";
+      }
+      this._els.list.innerHTML = `<div class="empty">${msg}</div>`;
       this._scheduleTick();
       return;
     }
