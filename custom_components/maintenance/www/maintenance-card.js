@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.3.24";
+const CARD_VERSION = "0.3.25";
 
 const STATE_COLOR = {
   ok: "var(--success-color, #4caf50)",
@@ -54,10 +54,10 @@ function _t(hass, key, params) {
   );
 }
 
-// Locale-aware duration display. Never emits decimals: minute/hour counters
-// render as M:SS / H:MM; day+ counters render as two-component text like
-// "3d 12h" using Intl.NumberFormat's unit style so it localises properly
-// (e.g. "3 T 12 Std." in German).
+// Locale-aware duration display. Whole values in the configured unit render
+// as a spelled-out unit ("2 minutes", "30 days"). Fractional minute/hour
+// counters render as M:SS / H:MM digital format; fractional day+ counters
+// render as two-component narrow-unit text like "3d 12h" ("3 T 12h" in DE).
 function _fmtDuration(hass, value, unit) {
   const lang = (hass && hass.language) || "en";
   const nfInt = new Intl.NumberFormat(lang, { maximumFractionDigits: 0 });
@@ -71,14 +71,37 @@ function _fmtDuration(hass, value, unit) {
 
   if (!SECONDS_PER_UNIT[unit]) return nfInt.format(value);
 
-  const totalSec = value * SECONDS_PER_UNIT[unit];
-  const nfUnit = (n, u) =>
+  const unitSingular = {
+    minutes: "minute",
+    hours: "hour",
+    days: "day",
+    weeks: "week",
+    months: "month",
+    years: "year",
+  }[unit];
+  const fmtLong = (n, u) =>
+    new Intl.NumberFormat(lang, {
+      style: "unit",
+      unit: u,
+      unitDisplay: "long",
+      maximumFractionDigits: 0,
+    }).format(n);
+  const fmtNarrow = (n, u) =>
     new Intl.NumberFormat(lang, {
       style: "unit",
       unit: u,
       unitDisplay: "narrow",
       maximumFractionDigits: 0,
     }).format(n);
+
+  // Whole value in the configured unit → spelled-out unit label
+  // (e.g. "2 minutes" / "2 Minuten" instead of "2:00").
+  const rounded = Math.round(value);
+  if (Math.abs(value - rounded) < 0.005) {
+    return fmtLong(rounded, unitSingular);
+  }
+
+  const totalSec = value * SECONDS_PER_UNIT[unit];
 
   if (unit === "minutes") {
     const m = Math.floor(totalSec / 60);
@@ -101,9 +124,9 @@ function _fmtDuration(hass, value, unit) {
   const primaryVal = Math.floor(totalSec / primary[1]);
   const secondaryVal = Math.floor((totalSec - primaryVal * primary[1]) / secondary[1]);
   const parts = [];
-  if (primaryVal > 0) parts.push(nfUnit(primaryVal, primary[0]));
-  if (secondaryVal > 0 || parts.length === 0)
-    parts.push(nfUnit(secondaryVal, secondary[0]));
+  if (primaryVal > 0) parts.push(fmtNarrow(primaryVal, primary[0]));
+  if (secondaryVal > 0) parts.push(fmtNarrow(secondaryVal, secondary[0]));
+  if (parts.length === 0) parts.push(fmtNarrow(0, primary[0]));
   return parts.join(" ");
 }
 
