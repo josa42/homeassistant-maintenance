@@ -51,6 +51,15 @@
           "warn_threshold_percent": "Warnschwelle (%)",
           "last_done": "Zuletzt erledigt (optional)"
         }
+      },
+      "template_boolean": {
+        "title": "Template (Boolean)",
+        "description": "Gib ein Jinja-Template ein. Wenn es einen wahren Wert liefert, wird der Tracker als überfällig markiert.",
+        "data": {
+          "name": "Name",
+          "template": "Template",
+          "last_done": "Zuletzt erledigt (optional)"
+        }
       }
     },
     "abort": {
@@ -71,7 +80,8 @@
         "time_elapsed": "Verstrichene Zeit",
         "entity_on_duration": "Einschaltdauer einer Entität",
         "entity_usage_count": "Nutzungsanzahl einer Entität",
-        "recurring_date": "Wiederkehrendes Datum"
+        "recurring_date": "Wiederkehrendes Datum",
+        "template_boolean": "Template (Boolean)"
       }
     },
     "duration_unit": {

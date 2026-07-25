@@ -13,12 +13,14 @@ CRITERION_TIME_ELAPSED: Final = "time_elapsed"
 CRITERION_ENTITY_ON_DURATION: Final = "entity_on_duration"
 CRITERION_ENTITY_USAGE_COUNT: Final = "entity_usage_count"
 CRITERION_RECURRING_DATE: Final = "recurring_date"
+CRITERION_TEMPLATE_BOOLEAN: Final = "template_boolean"
 
 CRITERIA: Final = (
     CRITERION_TIME_ELAPSED,
     CRITERION_ENTITY_ON_DURATION,
     CRITERION_ENTITY_USAGE_COUNT,
     CRITERION_RECURRING_DATE,
+    CRITERION_TEMPLATE_BOOLEAN,
 )
 
 # Tracker states
@@ -74,6 +76,7 @@ CONF_WARN_THRESHOLD_PERCENT: Final = "warn_threshold_percent"
 CONF_DAY_OF_MONTH: Final = "day_of_month"
 CONF_MONTH_OF_YEAR: Final = "month_of_year"
 CONF_LAST_DONE: Final = "last_done"
+CONF_TEMPLATE: Final = "template"
 
 MONTH_ANY: Final = "any"
 

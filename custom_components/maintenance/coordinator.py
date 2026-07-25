@@ -10,8 +10,13 @@ import logging
 from typing import Any
 
 from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
-from homeassistant.helpers.event import async_track_state_change_event
+from homeassistant.helpers.event import (
+    TrackTemplate,
+    async_track_state_change_event,
+    async_track_template_result,
+)
 from homeassistant.helpers.storage import Store
+from homeassistant.helpers.template import Template
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 
@@ -25,6 +30,7 @@ from .const import (
     CONF_NAME,
     CONF_ON_STATE,
     CONF_TARGET_ENTITY,
+    CONF_TEMPLATE,
     CONF_THRESHOLD,
     CONF_THRESHOLD_COUNT,
     CONF_THRESHOLD_UNIT,
@@ -33,6 +39,7 @@ from .const import (
     CRITERION_ENTITY_ON_DURATION,
     CRITERION_ENTITY_USAGE_COUNT,
     CRITERION_RECURRING_DATE,
+    CRITERION_TEMPLATE_BOOLEAN,
     CRITERION_TIME_ELAPSED,
     DEFAULT_FROM_STATE,
     DEFAULT_INTERVAL_UNIT,
@@ -512,6 +519,72 @@ class RecurringDateCoordinator(MaintenanceCoordinator):
         )
 
 
+class _TemplateCoordinatorBase(MaintenanceCoordinator):
+    """Shared plumbing for template-driven criteria.
+
+    Subclasses implement `_compute()` using `self._latest_result`, which is
+    kept up to date by HA's template tracker (re-renders whenever a
+    dependent entity's state changes).
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.template = Template(self.config[CONF_TEMPLATE], self.hass)
+        self._latest_result: Any = None
+        self._template_track = None
+
+    async def async_start(self) -> None:
+        try:
+            self._latest_result = self.template.async_render(parse_result=True)
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.debug("Initial template render failed: %s", err)
+
+        self._template_track = async_track_template_result(
+            self.hass,
+            [TrackTemplate(self.template, None)],
+            self._on_template_update,
+        )
+        self._unsub_state.append(self._template_track.async_remove)
+
+    @callback
+    def _on_template_update(self, event, updates) -> None:
+        for update in updates:
+            if isinstance(update.result, Exception):
+                continue
+            self._latest_result = update.result
+        self.hass.async_create_task(self.async_refresh())
+
+
+class TemplateBooleanCoordinator(_TemplateCoordinatorBase):
+    """Template that renders a truthy/falsy value; truthy → OVERDUE."""
+
+    @staticmethod
+    def _truthy(v: Any) -> bool:
+        if v is None:
+            return False
+        if isinstance(v, bool):
+            return v
+        if isinstance(v, (int, float)):
+            return v != 0
+        if isinstance(v, str):
+            return v.strip().lower() in ("true", "1", "yes", "on")
+        return bool(v)
+
+    def _compute(self) -> MaintenanceData:
+        is_due = self._truthy(self._latest_result)
+        return MaintenanceData(
+            state=STATE_OVERDUE if is_due else STATE_OK,
+            counter=100.0 if is_due else 0.0,
+            counter_unit="",
+            progress=100.0 if is_due else 0.0,
+            threshold=0.0,
+            last_done_date=self.persisted.last_done_date,
+            estimated_due_date=None,
+            criterion=CRITERION_TEMPLATE_BOOLEAN,
+            warn_threshold_percent=self.warn_threshold_percent,
+        )
+
+
 def build_coordinator(
     hass: HomeAssistant,
     entry_id: str,
@@ -529,4 +602,6 @@ def build_coordinator(
         return EntityUsageCountCoordinator(hass, entry_id, tracker_id, config, store)
     if criterion == CRITERION_RECURRING_DATE:
         return RecurringDateCoordinator(hass, entry_id, tracker_id, config, store)
+    if criterion == CRITERION_TEMPLATE_BOOLEAN:
+        return TemplateBooleanCoordinator(hass, entry_id, tracker_id, config, store)
     raise ValueError(f"Unknown criterion: {criterion}")

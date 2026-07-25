@@ -29,6 +29,7 @@ from .const import (
     CONF_NAME,
     CONF_ON_STATE,
     CONF_TARGET_ENTITY,
+    CONF_TEMPLATE,
     CONF_THRESHOLD,
     CONF_THRESHOLD_COUNT,
     CONF_THRESHOLD_UNIT,
@@ -37,6 +38,7 @@ from .const import (
     CRITERION_ENTITY_ON_DURATION,
     CRITERION_ENTITY_USAGE_COUNT,
     CRITERION_RECURRING_DATE,
+    CRITERION_TEMPLATE_BOOLEAN,
     CRITERION_TIME_ELAPSED,
     DEFAULT_FROM_STATE,
     DEFAULT_INTERVAL_UNIT,
@@ -63,6 +65,7 @@ _DURATION_UNIT_SELECTOR = selector.SelectSelector(
     )
 )
 _LAST_DONE_SELECTOR = selector.DateTimeSelector()
+_TEMPLATE_SELECTOR = selector.TemplateSelector()
 
 _CRITERION_SCHEMAS: dict[str, vol.Schema] = {
     CRITERION_TIME_ELAPSED: vol.Schema(
@@ -123,6 +126,13 @@ _CRITERION_SCHEMAS: dict[str, vol.Schema] = {
             vol.Optional(CONF_LAST_DONE): _LAST_DONE_SELECTOR,
         }
     ),
+    CRITERION_TEMPLATE_BOOLEAN: vol.Schema(
+        {
+            vol.Required(CONF_NAME): _NAME_SELECTOR,
+            vol.Required(CONF_TEMPLATE): _TEMPLATE_SELECTOR,
+            vol.Optional(CONF_LAST_DONE): _LAST_DONE_SELECTOR,
+        }
+    ),
 }
 
 
@@ -154,6 +164,7 @@ class MaintenanceConfigFlow(ConfigFlow, domain=DOMAIN):
                                 CRITERION_ENTITY_ON_DURATION,
                                 CRITERION_ENTITY_USAGE_COUNT,
                                 CRITERION_RECURRING_DATE,
+                                CRITERION_TEMPLATE_BOOLEAN,
                             ],
                             translation_key="criterion",
                             mode=selector.SelectSelectorMode.DROPDOWN,
@@ -189,6 +200,11 @@ class MaintenanceConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         return await self._async_handle_details(CRITERION_RECURRING_DATE, user_input)
+
+    async def async_step_template_boolean(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        return await self._async_handle_details(CRITERION_TEMPLATE_BOOLEAN, user_input)
 
     async def _async_show_details_step(
         self, existing_data: dict[str, Any] | None = None

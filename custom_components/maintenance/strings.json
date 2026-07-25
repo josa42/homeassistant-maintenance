@@ -51,6 +51,15 @@
           "warn_threshold_percent": "Warn threshold (%)",
           "last_done": "Last done (optional)"
         }
+      },
+      "template_boolean": {
+        "title": "Template (boolean)",
+        "description": "Enter a Jinja template. When it renders a truthy value, the tracker is marked overdue.",
+        "data": {
+          "name": "Name",
+          "template": "Template",
+          "last_done": "Last done (optional)"
+        }
       }
     },
     "abort": {
@@ -71,7 +80,8 @@
         "time_elapsed": "Time elapsed",
         "entity_on_duration": "Entity on-duration",
         "entity_usage_count": "Entity usage count",
-        "recurring_date": "Recurring date"
+        "recurring_date": "Recurring date",
+        "template_boolean": "Template (boolean)"
       }
     },
     "duration_unit": {
