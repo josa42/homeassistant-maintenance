@@ -124,14 +124,18 @@ class MaintenanceConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_CRITERION, default=CRITERION_TIME_ELAPSED): vol.In(
-                        [
-                            CRITERION_TIME_ELAPSED,
-                            CRITERION_ENTITY_ON_DURATION,
-                            CRITERION_ENTITY_USAGE_COUNT,
-                            CRITERION_MANUAL,
-                        ]
-                    )
+                    vol.Required(CONF_CRITERION, default=CRITERION_TIME_ELAPSED): selector.SelectSelector(
+                        selector.SelectSelectorConfig(
+                            options=[
+                                CRITERION_TIME_ELAPSED,
+                                CRITERION_ENTITY_ON_DURATION,
+                                CRITERION_ENTITY_USAGE_COUNT,
+                                CRITERION_MANUAL,
+                            ],
+                            translation_key="criterion",
+                            mode=selector.SelectSelectorMode.DROPDOWN,
+                        )
+                    ),
                 }
             ),
         )

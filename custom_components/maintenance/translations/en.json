@@ -60,6 +60,14 @@
     }
   },
   "selector": {
+    "criterion": {
+      "options": {
+        "time_elapsed": "Time elapsed",
+        "entity_on_duration": "Entity on-duration",
+        "entity_usage_count": "Entity usage count",
+        "manual": "Manual only"
+      }
+    },
     "duration_unit": {
       "options": {
         "minutes": "Minutes",
