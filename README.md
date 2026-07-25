@@ -8,10 +8,12 @@ Each **tracker** is one maintenance job (change oven filter, clean washer, repla
 
 | Criterion | When it becomes due |
 |---|---|
-| `time_elapsed` | N days have passed since it was last done |
-| `entity_on_duration` | A target entity has been in the "on" state for N hours since it was last done |
+| `time_elapsed` | The configured interval has passed since it was last done |
+| `entity_on_duration` | A target entity has spent the configured duration in the "on" state since it was last done |
 | `entity_usage_count` | A target entity has transitioned `from → to` state N times since it was last done |
 | `manual` | Only marked via the "mark done" service / button |
+
+Durations (interval / on-duration threshold) accept **minutes, hours, days, weeks, months, or years**. Months and years are computed as 30.4375 and 365.25 days respectively.
 
 ## Installation
 
@@ -36,7 +38,7 @@ sensor.oven_cleaning:
   attributes:
     estimated_due_date: 2026-08-14T00:00:00+00:00
     counter: 435
-    counter_unit: h
+    counter_unit: hours
     last_done_date: 2026-05-14T09:12:00+00:00
     progress: 87
     criterion: entity_on_duration

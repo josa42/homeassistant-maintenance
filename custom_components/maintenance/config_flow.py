@@ -21,12 +21,14 @@ from homeassistant.helpers import selector
 from .const import (
     CONF_CRITERION,
     CONF_FROM_STATE,
-    CONF_INTERVAL_DAYS,
+    CONF_INTERVAL,
+    CONF_INTERVAL_UNIT,
     CONF_NAME,
     CONF_ON_STATE,
     CONF_TARGET_ENTITY,
+    CONF_THRESHOLD,
     CONF_THRESHOLD_COUNT,
-    CONF_THRESHOLD_HOURS,
+    CONF_THRESHOLD_UNIT,
     CONF_TO_STATE,
     CONF_WARN_THRESHOLD_PERCENT,
     CRITERION_ENTITY_ON_DURATION,
@@ -34,10 +36,13 @@ from .const import (
     CRITERION_MANUAL,
     CRITERION_TIME_ELAPSED,
     DEFAULT_FROM_STATE,
+    DEFAULT_INTERVAL_UNIT,
     DEFAULT_ON_STATE,
+    DEFAULT_THRESHOLD_UNIT,
     DEFAULT_TO_STATE,
     DEFAULT_WARN_THRESHOLD_PERCENT,
     DOMAIN,
+    DURATION_UNITS,
 )
 
 _WARN_SELECTOR = selector.NumberSelector(
@@ -46,14 +51,22 @@ _WARN_SELECTOR = selector.NumberSelector(
 _NAME_SELECTOR = selector.TextSelector()
 _ENTITY_SELECTOR = selector.EntitySelector()
 _TEXT_SELECTOR = selector.TextSelector()
+_DURATION_UNIT_SELECTOR = selector.SelectSelector(
+    selector.SelectSelectorConfig(
+        options=list(DURATION_UNITS),
+        translation_key="duration_unit",
+        mode=selector.SelectSelectorMode.DROPDOWN,
+    )
+)
 
 _CRITERION_SCHEMAS: dict[str, vol.Schema] = {
     CRITERION_TIME_ELAPSED: vol.Schema(
         {
             vol.Required(CONF_NAME): _NAME_SELECTOR,
-            vol.Required(CONF_INTERVAL_DAYS): selector.NumberSelector(
+            vol.Required(CONF_INTERVAL): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=1, step=1, mode=selector.NumberSelectorMode.BOX)
             ),
+            vol.Required(CONF_INTERVAL_UNIT, default=DEFAULT_INTERVAL_UNIT): _DURATION_UNIT_SELECTOR,
             vol.Required(CONF_WARN_THRESHOLD_PERCENT, default=DEFAULT_WARN_THRESHOLD_PERCENT): _WARN_SELECTOR,
         }
     ),
@@ -62,9 +75,10 @@ _CRITERION_SCHEMAS: dict[str, vol.Schema] = {
             vol.Required(CONF_NAME): _NAME_SELECTOR,
             vol.Required(CONF_TARGET_ENTITY): _ENTITY_SELECTOR,
             vol.Required(CONF_ON_STATE, default=DEFAULT_ON_STATE): _TEXT_SELECTOR,
-            vol.Required(CONF_THRESHOLD_HOURS): selector.NumberSelector(
+            vol.Required(CONF_THRESHOLD): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=0.5, step=0.5, mode=selector.NumberSelectorMode.BOX)
             ),
+            vol.Required(CONF_THRESHOLD_UNIT, default=DEFAULT_THRESHOLD_UNIT): _DURATION_UNIT_SELECTOR,
             vol.Required(CONF_WARN_THRESHOLD_PERCENT, default=DEFAULT_WARN_THRESHOLD_PERCENT): _WARN_SELECTOR,
         }
     ),
@@ -92,7 +106,7 @@ _CRITERION_SCHEMAS: dict[str, vol.Schema] = {
 class MaintenanceConfigFlow(ConfigFlow, domain=DOMAIN):
     """Create one maintenance tracker per config entry."""
 
-    VERSION = 1
+    VERSION = 2
 
     def __init__(self) -> None:
         self._criterion: str | None = None

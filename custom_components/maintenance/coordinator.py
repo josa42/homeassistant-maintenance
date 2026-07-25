@@ -17,12 +17,14 @@ from homeassistant.util import dt as dt_util
 from .const import (
     CONF_CRITERION,
     CONF_FROM_STATE,
-    CONF_INTERVAL_DAYS,
+    CONF_INTERVAL,
+    CONF_INTERVAL_UNIT,
     CONF_NAME,
     CONF_ON_STATE,
     CONF_TARGET_ENTITY,
+    CONF_THRESHOLD,
     CONF_THRESHOLD_COUNT,
-    CONF_THRESHOLD_HOURS,
+    CONF_THRESHOLD_UNIT,
     CONF_TO_STATE,
     CONF_WARN_THRESHOLD_PERCENT,
     CRITERION_ENTITY_ON_DURATION,
@@ -30,7 +32,9 @@ from .const import (
     CRITERION_MANUAL,
     CRITERION_TIME_ELAPSED,
     DEFAULT_FROM_STATE,
+    DEFAULT_INTERVAL_UNIT,
     DEFAULT_ON_STATE,
+    DEFAULT_THRESHOLD_UNIT,
     DEFAULT_TO_STATE,
     DEFAULT_WARN_THRESHOLD_PERCENT,
     DOMAIN,
@@ -38,14 +42,13 @@ from .const import (
     STATE_OK,
     STATE_OVERDUE,
     UNIT_DAYS,
-    UNIT_HOURS,
+    UNIT_SECONDS,
     UNIT_USES,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
 UPDATE_INTERVAL = timedelta(minutes=1)
-DURATION_TICK_INTERVAL = timedelta(minutes=5)
 
 
 @dataclass
@@ -220,21 +223,28 @@ class MaintenanceCoordinator(DataUpdateCoordinator[MaintenanceData]):
 
 
 class TimeElapsedCoordinator(MaintenanceCoordinator):
-    """Due after N days since last_done."""
+    """Due after a configured interval (value + unit) since last_done."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.interval_value: float = float(self.config[CONF_INTERVAL])
+        self.interval_unit: str = self.config.get(CONF_INTERVAL_UNIT, DEFAULT_INTERVAL_UNIT)
+        self.interval_seconds: float = self.interval_value * UNIT_SECONDS[self.interval_unit]
 
     def _compute(self) -> MaintenanceData:
-        interval_days = float(self.config[CONF_INTERVAL_DAYS])
         last_done = self.persisted.last_done_date
         now = dt_util.utcnow()
-        elapsed_days = (now - last_done).total_seconds() / 86400 if last_done else 0.0
-        progress = (elapsed_days / interval_days * 100) if interval_days > 0 else 0.0
-        due = last_done + timedelta(days=interval_days) if last_done else None
+        elapsed_seconds = (now - last_done).total_seconds() if last_done else 0.0
+        unit_seconds = UNIT_SECONDS[self.interval_unit]
+        counter = elapsed_seconds / unit_seconds
+        progress = (elapsed_seconds / self.interval_seconds * 100) if self.interval_seconds > 0 else 0.0
+        due = last_done + timedelta(seconds=self.interval_seconds) if last_done else None
         return MaintenanceData(
             state=self._state_from_progress(progress),
-            counter=round(elapsed_days, 2),
-            counter_unit=UNIT_DAYS,
+            counter=round(counter, 2),
+            counter_unit=self.interval_unit,
             progress=round(progress, 1),
-            threshold=interval_days,
+            threshold=self.interval_value,
             last_done_date=last_done,
             estimated_due_date=due,
             criterion=CRITERION_TIME_ELAPSED,
@@ -269,22 +279,44 @@ class EntityOnDurationCoordinator(MaintenanceCoordinator):
         super().__init__(*args, **kwargs)
         self.target_entity: str = self.config[CONF_TARGET_ENTITY]
         self.on_state: str = self.config.get(CONF_ON_STATE, DEFAULT_ON_STATE)
-        self.threshold_hours: float = float(self.config[CONF_THRESHOLD_HOURS])
+        self.threshold_value: float = float(self.config[CONF_THRESHOLD])
+        self.threshold_unit: str = self.config.get(CONF_THRESHOLD_UNIT, DEFAULT_THRESHOLD_UNIT)
+        self.threshold_seconds: float = self.threshold_value * UNIT_SECONDS[self.threshold_unit]
 
     async def async_start(self) -> None:
-        # If HA restarted while the entity was on, we do not know how long
-        # it has been on since restart. Seed on_since from current state.
-        current = self.hass.states.get(self.target_entity)
-        if current is not None and current.state == self.on_state:
-            self.persisted.on_since = dt_util.utcnow()
-            self.store.mark_dirty()
+        self._sync_on_since()
         self._unsub_state.append(
             async_track_state_change_event(
                 self.hass, [self.target_entity], self._on_state_change
             )
         )
-        # Tick regularly so the counter advances while the entity remains on.
-        self.update_interval = DURATION_TICK_INTERVAL
+
+    @callback
+    def _sync_on_since(self) -> None:
+        """Seed ``on_since`` from the current state.
+
+        Called on startup, mark_done, and reset so a continuously-on entity's
+        counter keeps advancing without waiting for an off→on transition.
+        """
+        current = self.hass.states.get(self.target_entity)
+        is_on = current is not None and current.state == self.on_state
+        persisted = self.persisted
+        if is_on and persisted.on_since is None:
+            persisted.on_since = dt_util.utcnow()
+            self.store.mark_dirty()
+        elif not is_on and persisted.on_since is not None:
+            persisted.on_since = None
+            self.store.mark_dirty()
+
+    async def async_mark_done(self, when: datetime | None = None) -> None:
+        await super().async_mark_done(when)
+        self._sync_on_since()
+        await self.async_refresh()
+
+    async def async_reset_counter(self) -> None:
+        await super().async_reset_counter()
+        self._sync_on_since()
+        await self.async_refresh()
 
     @callback
     def _on_state_change(self, event: Event[EventStateChangedData]) -> None:
@@ -312,35 +344,37 @@ class EntityOnDurationCoordinator(MaintenanceCoordinator):
 
     def _compute(self) -> MaintenanceData:
         seconds = self._current_seconds()
-        hours = seconds / 3600
-        progress = (hours / self.threshold_hours * 100) if self.threshold_hours > 0 else 0.0
+        unit_seconds = UNIT_SECONDS[self.threshold_unit]
+        counter = seconds / unit_seconds
+        progress = (seconds / self.threshold_seconds * 100) if self.threshold_seconds > 0 else 0.0
         last_done = self.persisted.last_done_date
-        due = self._estimate_due(hours, last_done)
+        due = self._estimate_due(seconds, last_done)
         return MaintenanceData(
             state=self._state_from_progress(progress),
-            counter=round(hours, 2),
-            counter_unit=UNIT_HOURS,
+            counter=round(counter, 2),
+            counter_unit=self.threshold_unit,
             progress=round(progress, 1),
-            threshold=self.threshold_hours,
+            threshold=self.threshold_value,
             last_done_date=last_done,
             estimated_due_date=due,
             criterion=CRITERION_ENTITY_ON_DURATION,
             warn_threshold_percent=self.warn_threshold_percent,
         )
 
-    def _estimate_due(self, hours: float, last_done: datetime | None) -> datetime | None:
-        if last_done is None or hours <= 0:
+    def _estimate_due(
+        self, accumulated_seconds: float, last_done: datetime | None
+    ) -> datetime | None:
+        if last_done is None or accumulated_seconds <= 0:
             return None
         now = dt_util.utcnow()
         elapsed_seconds = (now - last_done).total_seconds()
         if elapsed_seconds <= 0:
             return None
-        rate_hours_per_sec = hours / elapsed_seconds
-        remaining_hours = self.threshold_hours - hours
-        if rate_hours_per_sec <= 0:
+        rate = accumulated_seconds / elapsed_seconds
+        remaining = self.threshold_seconds - accumulated_seconds
+        if rate <= 0:
             return None
-        remaining_seconds = remaining_hours / rate_hours_per_sec
-        return now + timedelta(seconds=remaining_seconds)
+        return now + timedelta(seconds=remaining / rate)
 
 
 class EntityUsageCountCoordinator(MaintenanceCoordinator):

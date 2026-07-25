@@ -8,11 +8,13 @@ from homeassistant.data_entry_flow import FlowResultType
 
 from custom_components.maintenance.const import (
     CONF_CRITERION,
-    CONF_INTERVAL_DAYS,
+    CONF_INTERVAL,
+    CONF_INTERVAL_UNIT,
     CONF_NAME,
     CONF_WARN_THRESHOLD_PERCENT,
     CRITERION_TIME_ELAPSED,
     DOMAIN,
+    UNIT_MONTHS,
 )
 
 
@@ -31,14 +33,20 @@ async def test_full_flow_creates_entry(hass: HomeAssistant) -> None:
 
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
-        {CONF_NAME: "Oven filter", CONF_INTERVAL_DAYS: 30, CONF_WARN_THRESHOLD_PERCENT: 90},
+        {
+            CONF_NAME: "Oven filter",
+            CONF_INTERVAL: 3,
+            CONF_INTERVAL_UNIT: UNIT_MONTHS,
+            CONF_WARN_THRESHOLD_PERCENT: 90,
+        },
     )
     assert result["type"] == FlowResultType.CREATE_ENTRY
     assert result["title"] == "Oven filter"
     assert result["data"] == {
         CONF_CRITERION: CRITERION_TIME_ELAPSED,
         CONF_NAME: "Oven filter",
-        CONF_INTERVAL_DAYS: 30,
+        CONF_INTERVAL: 3,
+        CONF_INTERVAL_UNIT: UNIT_MONTHS,
         CONF_WARN_THRESHOLD_PERCENT: 90,
     }
 
@@ -54,6 +62,11 @@ async def test_multiple_trackers_allowed(hass: HomeAssistant) -> None:
         )
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
-            {CONF_NAME: name, CONF_INTERVAL_DAYS: 30, CONF_WARN_THRESHOLD_PERCENT: 90},
+            {
+                CONF_NAME: name,
+                CONF_INTERVAL: 30,
+                CONF_INTERVAL_UNIT: "days",
+                CONF_WARN_THRESHOLD_PERCENT: 90,
+            },
         )
         assert result["type"] == FlowResultType.CREATE_ENTRY

@@ -8,11 +8,13 @@ from freezegun import freeze_time
 
 from custom_components.maintenance.const import (
     CONF_CRITERION,
-    CONF_INTERVAL_DAYS,
+    CONF_INTERVAL,
+    CONF_INTERVAL_UNIT,
     CONF_NAME,
     CRITERION_TIME_ELAPSED,
     EVENT_MAINTENANCE_COMPLETED,
     STATE_OK,
+    UNIT_DAYS,
 )
 from custom_components.maintenance.coordinator import TrackerStore, build_coordinator
 
@@ -23,7 +25,8 @@ def _config() -> dict:
     return {
         CONF_CRITERION: CRITERION_TIME_ELAPSED,
         CONF_NAME: "Filter",
-        CONF_INTERVAL_DAYS: 30,
+        CONF_INTERVAL: 30,
+        CONF_INTERVAL_UNIT: UNIT_DAYS,
     }
 
 

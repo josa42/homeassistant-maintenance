@@ -6,10 +6,12 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.maintenance.const import (
     CONF_CRITERION,
-    CONF_INTERVAL_DAYS,
+    CONF_INTERVAL,
+    CONF_INTERVAL_UNIT,
     CONF_NAME,
     CRITERION_TIME_ELAPSED,
     DOMAIN,
+    UNIT_DAYS,
 )
 
 
@@ -20,7 +22,8 @@ async def test_setup_and_unload(hass):
         data={
             CONF_CRITERION: CRITERION_TIME_ELAPSED,
             CONF_NAME: "Oven",
-            CONF_INTERVAL_DAYS: 30,
+            CONF_INTERVAL: 30,
+            CONF_INTERVAL_UNIT: UNIT_DAYS,
         },
     )
     entry.add_to_hass(hass)

@@ -8,6 +8,14 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
+from .const import (
+    CONF_INTERVAL,
+    CONF_INTERVAL_UNIT,
+    CONF_THRESHOLD,
+    CONF_THRESHOLD_UNIT,
+    UNIT_DAYS,
+    UNIT_HOURS,
+)
 from .coordinator import MaintenanceCoordinator, TrackerStore, build_coordinator
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BUTTON]
@@ -54,3 +62,22 @@ async def async_unload_entry(hass: HomeAssistant, entry: MaintenanceConfigEntry)
 async def _async_reload_entry(hass: HomeAssistant, entry: MaintenanceConfigEntry) -> None:
     """Reload when reconfigured."""
     await hass.config_entries.async_reload(entry.entry_id)
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Migrate old entries: interval_days → interval+interval_unit=days, likewise threshold_hours."""
+    data = dict(entry.data)
+    changed = False
+    if "interval_days" in data:
+        data[CONF_INTERVAL] = data.pop("interval_days")
+        data.setdefault(CONF_INTERVAL_UNIT, UNIT_DAYS)
+        changed = True
+    if "threshold_hours" in data:
+        data[CONF_THRESHOLD] = data.pop("threshold_hours")
+        data.setdefault(CONF_THRESHOLD_UNIT, UNIT_HOURS)
+        changed = True
+    if changed:
+        hass.config_entries.async_update_entry(entry, data=data, version=2)
+    else:
+        hass.config_entries.async_update_entry(entry, version=2)
+    return True

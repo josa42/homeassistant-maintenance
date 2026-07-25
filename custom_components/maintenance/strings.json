@@ -12,7 +12,8 @@
         "title": "Time elapsed",
         "data": {
           "name": "Name",
-          "interval_days": "Interval (days)",
+          "interval": "Interval",
+          "interval_unit": "Unit",
           "warn_threshold_percent": "Warn threshold (%)"
         }
       },
@@ -22,7 +23,8 @@
           "name": "Name",
           "target_entity_id": "Target entity",
           "on_state": "State considered \"on\"",
-          "threshold_hours": "Threshold (hours)",
+          "threshold": "Threshold",
+          "threshold_unit": "Unit",
           "warn_threshold_percent": "Warn threshold (%)"
         }
       },
@@ -54,6 +56,18 @@
       "init": {
         "title": "Edit tracker",
         "description": "Change this tracker's settings. To switch to a different criterion, delete and recreate the tracker."
+      }
+    }
+  },
+  "selector": {
+    "duration_unit": {
+      "options": {
+        "minutes": "Minutes",
+        "hours": "Hours",
+        "days": "Days",
+        "weeks": "Weeks",
+        "months": "Months",
+        "years": "Years"
       }
     }
   },

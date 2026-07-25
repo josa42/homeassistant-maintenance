@@ -26,20 +26,49 @@ STATE_OK: Final = "ok"
 STATE_DUE_SOON: Final = "due_soon"
 STATE_OVERDUE: Final = "overdue"
 
-# Counter units
-UNIT_DAYS: Final = "d"
-UNIT_HOURS: Final = "h"
+# Duration units (used for interval + on-duration threshold)
+UNIT_MINUTES: Final = "minutes"
+UNIT_HOURS: Final = "hours"
+UNIT_DAYS: Final = "days"
+UNIT_WEEKS: Final = "weeks"
+UNIT_MONTHS: Final = "months"
+UNIT_YEARS: Final = "years"
+
+DURATION_UNITS: Final = (
+    UNIT_MINUTES,
+    UNIT_HOURS,
+    UNIT_DAYS,
+    UNIT_WEEKS,
+    UNIT_MONTHS,
+    UNIT_YEARS,
+)
+
+# Seconds per configured unit. Months and years use average lengths (30.4375 / 365.25 days)
+# because trackers are approximate — a month-old task doesn't care whether the month
+# was 28 or 31 days.
+UNIT_SECONDS: Final[dict[str, float]] = {
+    UNIT_MINUTES: 60.0,
+    UNIT_HOURS: 3600.0,
+    UNIT_DAYS: 86400.0,
+    UNIT_WEEKS: 604800.0,
+    UNIT_MONTHS: 2629800.0,
+    UNIT_YEARS: 31557600.0,
+}
+
+# Non-duration counter unit (for entity_usage_count)
 UNIT_USES: Final = "uses"
 
 # Configuration keys
 CONF_NAME: Final = "name"
 CONF_CRITERION: Final = "criterion"
-CONF_INTERVAL_DAYS: Final = "interval_days"
+CONF_INTERVAL: Final = "interval"
+CONF_INTERVAL_UNIT: Final = "interval_unit"
 CONF_TARGET_ENTITY: Final = "target_entity_id"
 CONF_ON_STATE: Final = "on_state"
 CONF_FROM_STATE: Final = "from_state"
 CONF_TO_STATE: Final = "to_state"
-CONF_THRESHOLD_HOURS: Final = "threshold_hours"
+CONF_THRESHOLD: Final = "threshold"
+CONF_THRESHOLD_UNIT: Final = "threshold_unit"
 CONF_THRESHOLD_COUNT: Final = "threshold_count"
 CONF_WARN_THRESHOLD_PERCENT: Final = "warn_threshold_percent"
 
@@ -47,6 +76,8 @@ DEFAULT_WARN_THRESHOLD_PERCENT: Final = 90
 DEFAULT_ON_STATE: Final = "on"
 DEFAULT_FROM_STATE: Final = "off"
 DEFAULT_TO_STATE: Final = "on"
+DEFAULT_INTERVAL_UNIT: Final = UNIT_DAYS
+DEFAULT_THRESHOLD_UNIT: Final = UNIT_HOURS
 
 EVENT_MAINTENANCE_COMPLETED: Final = "maintenance_completed"
 
