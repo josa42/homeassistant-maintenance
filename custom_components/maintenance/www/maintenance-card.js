@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.3.22";
+const CARD_VERSION = "0.3.23";
 
 const STATE_COLOR = {
   ok: "var(--success-color, #4caf50)",
@@ -351,7 +351,7 @@ const STATE_RANK = { overdue: 0, due_soon: 1, ok: 2 };
 
 class MaintenanceListCard extends HTMLElement {
   static getStubConfig() {
-    return { hide_ok: false, hide_when_empty: false };
+    return { hide_ok: false, hide_when_empty: false, separate_items: false };
   }
 
   static async getConfigElement() {
@@ -360,7 +360,12 @@ class MaintenanceListCard extends HTMLElement {
   }
 
   setConfig(config) {
-    this._config = { hide_ok: false, hide_when_empty: false, ...(config || {}) };
+    this._config = {
+      hide_ok: false,
+      hide_when_empty: false,
+      separate_items: false,
+      ...(config || {}),
+    };
     if (this._hass) this._update();
   }
 
@@ -456,6 +461,8 @@ class MaintenanceListCard extends HTMLElement {
       return;
     }
     this.style.display = "";
+
+    this.classList.toggle("separate-items", !!this._config.separate_items);
 
     if (!this._built) this._build();
 
@@ -686,6 +693,16 @@ class MaintenanceListCard extends HTMLElement {
             background: var(--state-color);
             transition: width 0.3s ease, background 0.3s ease;
           }
+          /* separate_items: each row renders as an individual tile card. */
+          maintenance-list-card.separate-items > ha-card {
+            background: transparent;
+            box-shadow: none;
+          }
+          maintenance-list-card.separate-items .row {
+            background: var(--ha-card-background, var(--card-background-color, #fff));
+            box-shadow: var(--ha-card-box-shadow, none);
+            border-radius: var(--ha-card-border-radius, 12px);
+          }
         </style>
       </ha-card>
     `;
@@ -730,6 +747,7 @@ class MaintenanceListCard extends HTMLElement {
 const LIST_EDITOR_SCHEMA = [
   { name: "hide_ok", selector: { boolean: {} } },
   { name: "hide_when_empty", selector: { boolean: {} } },
+  { name: "separate_items", selector: { boolean: {} } },
   { name: "confirm", selector: { boolean: {} } },
 ];
 
@@ -753,6 +771,7 @@ class MaintenanceListCardEditor extends HTMLElement {
         ({
           hide_ok: "Hide OK trackers",
           hide_when_empty: "Hide card when empty",
+          separate_items: "Render each item as its own card",
           confirm: "Confirm before mark done",
         }[s.name] || s.name);
       form.addEventListener("value-changed", (e) => {
@@ -772,6 +791,7 @@ class MaintenanceListCardEditor extends HTMLElement {
     this._form.data = {
       hide_ok: this._config.hide_ok ?? false,
       hide_when_empty: this._config.hide_when_empty ?? false,
+      separate_items: this._config.separate_items ?? false,
       confirm: this._config.confirm ?? true,
     };
   }

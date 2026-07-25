@@ -67,6 +67,7 @@ A second card, `maintenance-list-card`, auto-discovers all trackers and lists th
 type: custom:maintenance-list-card
 hide_ok: false          # optional; hide healthy trackers
 hide_when_empty: false  # optional; hide the card entirely when there are no rows to show
+separate_items: false   # optional; render each row as its own tile card (background + rounded corners) instead of stacked in one card
 entities:               # optional; override auto-discovery
   - sensor.oven_filter
   - sensor.washer_clean
