@@ -50,6 +50,8 @@ sensor.oven_cleaning:
 
 A custom card ships with the integration and auto-registers on startup — no manual resource setup required.
 
+![Maintenance card](images/card.png)
+
 Add it via the visual editor: **Add card → Custom: Maintenance Tracker → pick a tracker sensor**. Or in YAML:
 
 ```yaml
@@ -63,6 +65,8 @@ The card shows the tracker's name, a progress bar in the state color (green / or
 
 A second card, `maintenance-list-card`, auto-discovers all trackers and lists them sorted by urgency (overdue first, then due soon, then ok — each group sorted by progress).
 
+![Maintenance list card](images/list-card.png)
+
 ```yaml
 type: custom:maintenance-list-card
 hide_ok: false          # optional; hide healthy trackers
@@ -72,6 +76,10 @@ entities:               # optional; override auto-discovery
   - sensor.oven_filter
   - sensor.washer_clean
 ```
+
+With `separate_items: true` every row becomes its own tile instead of sharing one card:
+
+![List card with separate items](images/list-card-separate-items.png)
 
 ## Services
 
