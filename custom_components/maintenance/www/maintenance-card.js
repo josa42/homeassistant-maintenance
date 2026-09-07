@@ -1036,7 +1036,7 @@ async function _confirm(dispatchEl, text, title, okLabel, cancelLabel) {
   } catch (e) {
     console.warn("[maintenance-card] HA confirm dialog unavailable:", e);
   }
-  // hacs.json requires HA 2025.2+, where the helper always exists, so this only
+  // hacs.json requires HA 2026.9+, where the helper always exists, so this only
   // guards an unexpected frontend failure. Still ask rather than marking a
   // tracker done unprompted.
   return window.confirm(text);
