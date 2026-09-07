@@ -1,0 +1,20 @@
+# The existing code runs wider than ruff's 88-char default; 110 is the longest
+# line currently in the tree. Tighten this and reformat if you want HA's 88.
+line-length = 110
+
+[lint]
+select = [
+    "E",  # pycodestyle
+    "F",  # pyflakes
+    "I",  # isort
+]
+ignore = []
+
+[lint.per-file-ignores]
+"tests/*" = ["E501"]
+
+# Match Home Assistant core's import style so the linter agrees with the code
+# the integration is written against.
+[lint.isort]
+force-sort-within-sections = true
+combine-as-imports = true
