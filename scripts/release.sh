@@ -52,11 +52,44 @@ fi
 print_info "Pulling latest changes..."
 git pull origin "$CURRENT_BRANCH"
 
+# Tests and lint run before any file is touched, so a failure leaves the working
+# tree exactly as it was.
+VENV_PYTHON="venv/bin/python"
+VENV_RUFF="venv/bin/ruff"
+
+if [ ! -x "$VENV_PYTHON" ]; then
+    print_error "Test environment not found at ./${VENV_PYTHON}"
+    print_error "Run 'make install' first."
+    exit 1
+fi
+
+print_info "Running tests..."
+"$VENV_PYTHON" -m pytest tests/
+
+if [ -x "$VENV_RUFF" ]; then
+    print_info "Running linter..."
+    "$VENV_RUFF" check custom_components/ tests/
+else
+    print_error "ruff not found at ./${VENV_RUFF}. Run 'make install' first."
+    exit 1
+fi
+
 MANIFEST_FILE="custom_components/maintenance/manifest.json"
 if [ ! -f "$MANIFEST_FILE" ]; then
     print_error "Manifest file not found: $MANIFEST_FILE"
     exit 1
 fi
+
+# From here on the tree gets modified; put it back if we bail out.
+restore_version_files() {
+    local code=$?
+    [ "$code" -eq 0 ] && return
+    print_warn "Release failed, restoring version files..."
+    git checkout -- "$MANIFEST_FILE" "$INIT_FILE" "$CARD_FILE" 2>/dev/null || true
+}
+INIT_FILE="custom_components/maintenance/__init__.py"
+CARD_FILE="custom_components/maintenance/www/maintenance-card.js"
+trap restore_version_files EXIT
 
 print_info "Updating version in manifest.json..."
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -73,8 +106,6 @@ fi
 print_info "manifest.json → ${VERSION}"
 
 # Also bump the frontend CARD_VERSION so browsers pick up a fresh bundle.
-INIT_FILE="custom_components/maintenance/__init__.py"
-CARD_FILE="custom_components/maintenance/www/maintenance-card.js"
 if [ -f "$INIT_FILE" ] && [ -f "$CARD_FILE" ]; then
     print_info "Updating CARD_VERSION in ${INIT_FILE} and ${CARD_FILE}..."
     if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -84,16 +115,6 @@ if [ -f "$INIT_FILE" ] && [ -f "$CARD_FILE" ]; then
         sed -i "s/^CARD_VERSION = \"[^\"]*\"/CARD_VERSION = \"${VERSION}\"/" "$INIT_FILE"
         sed -i "s/^const CARD_VERSION = \"[^\"]*\"/const CARD_VERSION = \"${VERSION}\"/" "$CARD_FILE"
     fi
-fi
-
-if [ -f "requirements-test.txt" ] && [ -x "/tmp/maint-venv/bin/python" ]; then
-    print_info "Running tests..."
-    /tmp/maint-venv/bin/python -m pytest tests/
-elif command -v pytest &> /dev/null; then
-    print_info "Running tests..."
-    pytest tests/
-else
-    print_warn "pytest not found, skipping tests"
 fi
 
 print_info "Committing version bump..."
