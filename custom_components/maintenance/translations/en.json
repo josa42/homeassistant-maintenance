@@ -170,6 +170,7 @@
     "empty_no_trackers": "No maintenance trackers configured.",
     "empty_all_ok_one": "Nothing due — 1 tracker is up to date.",
     "empty_all_ok_other": "Nothing due — all {count} trackers are up to date.",
+    "empty_hidden": "Nothing due — this card is hidden.",
     "units": {
       "uses_one": "use",
       "uses_other": "uses"

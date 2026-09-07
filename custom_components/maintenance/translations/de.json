@@ -170,6 +170,7 @@
     "empty_no_trackers": "Keine Wartungstracker konfiguriert.",
     "empty_all_ok_one": "Nichts fällig — 1 Tracker ist auf dem neuesten Stand.",
     "empty_all_ok_other": "Nichts fällig — alle {count} Tracker sind auf dem neuesten Stand.",
+    "empty_hidden": "Nichts fällig — diese Karte wird ausgeblendet.",
     "units": {
       "uses_one": "Nutzung",
       "uses_other": "Nutzungen"

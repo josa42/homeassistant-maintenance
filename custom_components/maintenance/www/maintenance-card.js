@@ -33,6 +33,8 @@ const EN_FALLBACK = {
     "Nothing due — 1 tracker is up to date.",
   "component.maintenance.card.empty_all_ok_other":
     "Nothing due — all {count} trackers are up to date.",
+  "component.maintenance.card.empty_hidden":
+    "Nothing due — this card is hidden.",
   "component.maintenance.card.units.uses_one": "use",
   "component.maintenance.card.units.uses_other": "uses",
   "component.maintenance.card.editor.entity": "Maintenance tracker",
@@ -671,7 +673,11 @@ class MaintenanceListCard extends HTMLElement {
 
     if (rows.length === 0) {
       let msg;
-      if (this._hiddenCount > 0) {
+      if (this._config.hide_when_empty) {
+        // Only reachable in the editor — outside it the card is collapsed. Say
+        // that it is hidden rather than implying it renders like this.
+        msg = _t(this._hass, "component.maintenance.card.empty_hidden");
+      } else if (this._hiddenCount > 0) {
         const key =
           this._hiddenCount === 1
             ? "component.maintenance.card.empty_all_ok_one"
