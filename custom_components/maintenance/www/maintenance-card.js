@@ -974,37 +974,55 @@ function _confirmDialog(_dispatchEl, text, title, okLabel, cancelLabel) {
       if (settled) return;
       settled = true;
       try {
-        dialog.close?.();
+        // The modern ha-dialog has no close(); it is driven by `open`.
+        if (typeof dialog.close === "function") dialog.close();
+        else dialog.open = false;
       } catch (_) {}
       setTimeout(() => dialog.remove(), 200);
       resolve(v);
     };
 
     const dialog = document.createElement("ha-dialog");
-    dialog.heading = title || "Confirm";
+    // HA replaced the mwc-based ha-dialog: the title is `headerTitle` and the
+    // actions live in a single `footer` slot. The old `primaryAction` /
+    // `secondaryAction` slots no longer exist, so buttons assigned to them are
+    // never slotted and render at zero size. Detect which generation we are on.
+    const modernDialog = "headerTitle" in dialog;
+    if (modernDialog) dialog.headerTitle = title || "Confirm";
+    else dialog.heading = title || "Confirm";
     dialog.open = true;
-    dialog.defaultAction = "ok";
 
     const body = document.createElement("div");
     body.textContent = text;
     body.style.padding = "8px 0";
     dialog.appendChild(body);
 
+    // The modern dialog exposes one `footer` slot, so the actions need their own
+    // row to sit side by side; the mwc-era dialog slotted them individually.
+    let actions = dialog;
+    if (modernDialog) {
+      actions = document.createElement("div");
+      actions.setAttribute("slot", "footer");
+      actions.style.display = "flex";
+      actions.style.justifyContent = "flex-end";
+      actions.style.gap = "8px";
+      actions.style.width = "100%";
+      dialog.appendChild(actions);
+    }
+
     const cancel = document.createElement("ha-button");
-    cancel.setAttribute("slot", "secondaryAction");
-    cancel.setAttribute("dialogAction", "cancel");
+    if (!modernDialog) cancel.setAttribute("slot", "secondaryAction");
     cancel.setAttribute("appearance", "plain");
     cancel.textContent = cancelLabel || "Cancel";
     cancel.addEventListener("click", () => settle(false));
-    dialog.appendChild(cancel);
+    actions.appendChild(cancel);
 
     const ok = document.createElement("ha-button");
-    ok.setAttribute("slot", "primaryAction");
-    ok.setAttribute("dialogAction", "ok");
+    if (!modernDialog) ok.setAttribute("slot", "primaryAction");
     ok.setAttribute("dialogInitialFocus", "");
     ok.textContent = okLabel || "OK";
     ok.addEventListener("click", () => settle(true));
-    dialog.appendChild(ok);
+    actions.appendChild(ok);
 
     // mwc-dialog doesn't wire Enter → default action; handle it ourselves.
     dialog.addEventListener("keydown", (ev) => {
