@@ -1090,6 +1090,27 @@ function _confirmDialog(_dispatchEl, text, title, okLabel, cancelLabel) {
   });
 }
 
+// Prefer HA's own confirmation dialog. `loadCardHelpers()` is the documented
+// global for custom cards and it loads the code-split `dialog-box` for us, so
+// we get HA's styling, focus handling and Escape/Enter behaviour for free.
+// The hand-rolled dialog below stays as a fallback for frontends without it.
+async function _confirm(dispatchEl, text, title, okLabel, cancelLabel) {
+  try {
+    const helpers = await window.loadCardHelpers?.();
+    if (helpers?.showConfirmationDialog) {
+      return await helpers.showConfirmationDialog(dispatchEl, {
+        title,
+        text,
+        confirmText: okLabel,
+        dismissText: cancelLabel,
+      });
+    }
+  } catch (e) {
+    console.warn("[maintenance-card] HA confirm dialog unavailable:", e);
+  }
+  return _confirmDialog(dispatchEl, text, title, okLabel, cancelLabel);
+}
+
 async function _markDone(dispatchEl, hass, entityId, confirmOpt) {
   if (confirmOpt) {
     const name = hass.states[entityId]?.attributes?.friendly_name || entityId;
@@ -1097,7 +1118,7 @@ async function _markDone(dispatchEl, hass, entityId, confirmOpt) {
       typeof confirmOpt === "string"
         ? confirmOpt
         : _t(hass, "component.maintenance.card.confirm_body", { name });
-    const ok = await _confirmDialog(
+    const ok = await _confirm(
       dispatchEl,
       msg,
       _t(hass, "component.maintenance.card.confirm_title"),
