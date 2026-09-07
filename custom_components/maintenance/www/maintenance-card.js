@@ -238,6 +238,15 @@ class MaintenanceCard extends HTMLElement {
   }
 
   connectedCallback() {
+    // If HA set these before the element upgraded, the own property shadows the
+    // accessor; re-assign it through the setter.
+    for (const prop of ["editMode", "preview"]) {
+      if (Object.prototype.hasOwnProperty.call(this, prop)) {
+        const value = this[prop];
+        delete this[prop];
+        this[prop] = value;
+      }
+    }
     if (this._config && this._hass) this._update();
   }
 
@@ -537,7 +546,34 @@ class MaintenanceListCard extends HTMLElement {
     return Math.max(1, (this._rows || []).length);
   }
 
+  // HA sets both of these on the card element: `editMode` while the dashboard is
+  // being edited, `preview` for that and the card picker. Plain HTMLElement has
+  // no reactivity, so re-render when they change.
+  set editMode(value) {
+    this._editMode = !!value;
+    if (this._config && this._hass) this._render();
+  }
+
+  get editMode() {
+    return !!this._editMode;
+  }
+
+  set preview(value) {
+    this._preview = !!value;
+    if (this._config && this._hass) this._render();
+  }
+
+  get preview() {
+    return !!this._preview;
+  }
+
+  _inEditor() {
+    return this.editMode || this.preview;
+  }
+
   _isHiddenEmpty() {
+    // Never collapse in the editor — an invisible card cannot be selected.
+    if (this._inEditor()) return false;
     return (
       !!this._config?.hide_when_empty &&
       Array.isArray(this._rows) &&
@@ -559,6 +595,15 @@ class MaintenanceListCard extends HTMLElement {
   }
 
   connectedCallback() {
+    // If HA set these before the element upgraded, the own property shadows the
+    // accessor; re-assign it through the setter.
+    for (const prop of ["editMode", "preview"]) {
+      if (Object.prototype.hasOwnProperty.call(this, prop)) {
+        const value = this[prop];
+        delete this[prop];
+        this[prop] = value;
+      }
+    }
     if (this._config && this._hass) this._update();
   }
 
@@ -614,7 +659,7 @@ class MaintenanceListCard extends HTMLElement {
     const rows = this._rows || [];
 
     // hide_when_empty: fully collapse the card in the section grid.
-    if (rows.length === 0 && this._config.hide_when_empty) {
+    if (this._isHiddenEmpty()) {
       this.style.display = "none";
       return;
     }
