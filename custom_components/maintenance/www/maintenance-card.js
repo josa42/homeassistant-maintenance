@@ -1049,25 +1049,48 @@ async function _markDone(dispatchEl, hass, entityId, confirmOpt) {
   }
 }
 
-// Register early — before any classes are used elsewhere — to survive races
-// where HA's dashboard renderer looks up the element before the module has
-// finished executing.
-try {
-  if (!customElements.get("maintenance-card")) {
-    customElements.define("maintenance-card", MaintenanceCard);
+// Register the elements.
+//
+// HA's frontend replaces `window.customElements` with a scoped-registry
+// polyfill while it boots. This module is injected via `add_extra_js_url`, so
+// module execution order against that swap is a race: if we run first we define
+// into the *native* registry, the polyfill then shadows it, and HA reports
+// "Custom element doesn't exist: maintenance-list-card" for the whole session.
+// Defining again into the swapped-in registry is legal (it is a different
+// registry object), so keep re-asserting the registration for a short window
+// after load. HA's own `whenDefined` hook then rebuilds any error cards.
+const CARD_REGISTRATIONS = [
+  ["maintenance-card", MaintenanceCard],
+  ["maintenance-card-editor", MaintenanceCardEditor],
+  ["maintenance-list-card", MaintenanceListCard],
+  ["maintenance-list-card-editor", MaintenanceListCardEditor],
+];
+
+function registerCards() {
+  const registry = window.customElements;
+  if (!registry) return;
+  for (const [name, cls] of CARD_REGISTRATIONS) {
+    if (registry.get(name)) continue;
+    try {
+      registry.define(name, cls);
+    } catch (e) {
+      console.error("[maintenance-card] failed to define", name, cls);
+    }
   }
-  if (!customElements.get("maintenance-card-editor")) {
-    customElements.define("maintenance-card-editor", MaintenanceCardEditor);
-  }
-  if (!customElements.get("maintenance-list-card")) {
-    customElements.define("maintenance-list-card", MaintenanceListCard);
-  }
-  if (!customElements.get("maintenance-list-card-editor")) {
-    customElements.define("maintenance-list-card-editor", MaintenanceListCardEditor);
-  }
-} catch (e) {
-  console.error("[maintenance-card] failed to define custom element:", e);
 }
+
+registerCards();
+
+// Re-assert across the polyfill swap. Cheap, and stops once HA has booted.
+let registerTicks = 0;
+const registerTimer = setInterval(() => {
+  registerCards();
+  if (++registerTicks >= 60) clearInterval(registerTimer);
+}, 200);
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", registerCards);
+}
+window.addEventListener("load", registerCards);
 
 window.customCards = window.customCards || [];
 if (!window.customCards.some((c) => c.type === "maintenance-card")) {
