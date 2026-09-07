@@ -1018,78 +1018,6 @@ function _counterText(hass, r) {
   return _fmtProgress(hass, r.counter, r.threshold, r.unit);
 }
 
-function _confirmDialog(_dispatchEl, text, title, okLabel, cancelLabel) {
-  return new Promise((resolve) => {
-    let settled = false;
-    const settle = (v) => {
-      if (settled) return;
-      settled = true;
-      try {
-        // The modern ha-dialog has no close(); it is driven by `open`.
-        if (typeof dialog.close === "function") dialog.close();
-        else dialog.open = false;
-      } catch (_) {}
-      setTimeout(() => dialog.remove(), 200);
-      resolve(v);
-    };
-
-    const dialog = document.createElement("ha-dialog");
-    // HA replaced the mwc-based ha-dialog: the title is `headerTitle` and the
-    // actions live in a single `footer` slot. The old `primaryAction` /
-    // `secondaryAction` slots no longer exist, so buttons assigned to them are
-    // never slotted and render at zero size. Detect which generation we are on.
-    const modernDialog = "headerTitle" in dialog;
-    if (modernDialog) dialog.headerTitle = title || "Confirm";
-    else dialog.heading = title || "Confirm";
-    dialog.open = true;
-
-    const body = document.createElement("div");
-    body.textContent = text;
-    body.style.padding = "8px 0";
-    dialog.appendChild(body);
-
-    // The modern dialog exposes one `footer` slot, so the actions need their own
-    // row to sit side by side; the mwc-era dialog slotted them individually.
-    let actions = dialog;
-    if (modernDialog) {
-      actions = document.createElement("div");
-      actions.setAttribute("slot", "footer");
-      actions.style.display = "flex";
-      actions.style.justifyContent = "flex-end";
-      actions.style.gap = "8px";
-      actions.style.width = "100%";
-      dialog.appendChild(actions);
-    }
-
-    const cancel = document.createElement("ha-button");
-    if (!modernDialog) cancel.setAttribute("slot", "secondaryAction");
-    cancel.setAttribute("appearance", "plain");
-    cancel.textContent = cancelLabel || "Cancel";
-    cancel.addEventListener("click", () => settle(false));
-    actions.appendChild(cancel);
-
-    const ok = document.createElement("ha-button");
-    if (!modernDialog) ok.setAttribute("slot", "primaryAction");
-    ok.setAttribute("dialogInitialFocus", "");
-    ok.textContent = okLabel || "OK";
-    ok.addEventListener("click", () => settle(true));
-    actions.appendChild(ok);
-
-    // mwc-dialog doesn't wire Enter → default action; handle it ourselves.
-    dialog.addEventListener("keydown", (ev) => {
-      if (ev.key === "Enter" && !ev.shiftKey && !ev.ctrlKey && !ev.metaKey) {
-        ev.preventDefault();
-        settle(true);
-      }
-    });
-
-    dialog.addEventListener("closed", (ev) => {
-      settle(ev.detail?.action === "ok");
-    });
-    document.body.appendChild(dialog);
-  });
-}
-
 // Prefer HA's own confirmation dialog. `loadCardHelpers()` is the documented
 // global for custom cards and it loads the code-split `dialog-box` for us, so
 // we get HA's styling, focus handling and Escape/Enter behaviour for free.
@@ -1108,7 +1036,10 @@ async function _confirm(dispatchEl, text, title, okLabel, cancelLabel) {
   } catch (e) {
     console.warn("[maintenance-card] HA confirm dialog unavailable:", e);
   }
-  return _confirmDialog(dispatchEl, text, title, okLabel, cancelLabel);
+  // hacs.json requires HA 2025.2+, where the helper always exists, so this only
+  // guards an unexpected frontend failure. Still ask rather than marking a
+  // tracker done unprompted.
+  return window.confirm(text);
 }
 
 async function _markDone(dispatchEl, hass, entityId, confirmOpt) {
