@@ -30,7 +30,7 @@ _LOGGER = logging.getLogger(__name__)
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BUTTON]
 
 CARD_URL_PATH = "/maintenance-tracker/maintenance-card.js"
-CARD_VERSION = "1.0.0"
+CARD_VERSION = "1.0.1"
 
 
 @dataclass

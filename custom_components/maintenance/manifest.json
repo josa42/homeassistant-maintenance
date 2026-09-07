@@ -1,7 +1,7 @@
 {
   "domain": "maintenance",
   "name": "Maintenance Tracker",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "documentation": "https://github.com/josa42/homeassistant-maintenance",
   "issue_tracker": "https://github.com/josa42/homeassistant-maintenance/issues",
   "codeowners": ["@josa42"],
