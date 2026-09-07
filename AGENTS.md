@@ -14,9 +14,11 @@ UI, HA-integration, or i18n changes.
   reintroduce single-instance parent + subentries; the Helpers UI can't drive
   that path (see below).
 - Tests use `pytest-homeassistant-custom-component` and live in `tests/`.
-  Test venv at `/tmp/maint-venv`. Run: `/tmp/maint-venv/bin/python -m pytest tests/`.
-- Real-HA validation stack: `docker compose up` (see `docker-compose.yml`) plus
+  Set up with `make install` (creates `./venv`), then `make test`. Lint with
+  `make lint` (ruff, configured in `ruff.toml`).
+- Real-HA validation stack: `make dev-up` (see `docker-compose.yml`) plus
   Puppeteer at `/tmp/node_modules/puppeteer-core` for scripted UI checks.
+  `make dev-restart` reloads after code changes, `make dev-logs` follows logs.
 
 ## Validate against real HA, not just simulations
 
@@ -142,8 +144,8 @@ caches. Users must:
   the shadow-DOM chain is what changes behaviour.
 - **Never** batch unrelated changes into one commit. User rule: commit
   individually.
-- **Always** run `/tmp/maint-venv/bin/python -m pytest tests/` after any
-  Python change.
+- **Always** run `make test` after any Python change, and `make lint` before
+  committing.
 - **Always** update `translations/en.json` after editing `strings.json` (they
   are literally the same file — cp one to the other).
 - **Always** update `translations/de.json` when adding user-facing strings.
