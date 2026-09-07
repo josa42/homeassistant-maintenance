@@ -40,6 +40,7 @@ const EN_FALLBACK = {
   "component.maintenance.card.editor.entity": "Maintenance tracker",
   "component.maintenance.card.editor.confirm": "Confirm before mark done",
   "component.maintenance.card.editor.hide_ok": "Hide OK trackers",
+  "component.maintenance.card.editor.hide_due_soon": "Hide due soon trackers",
   "component.maintenance.card.editor.hide_when_empty": "Hide card when empty",
   "component.maintenance.card.editor.separate_items":
     "Render each item as its own card",
@@ -520,7 +521,12 @@ const STATE_RANK = { overdue: 0, due_soon: 1, ok: 2 };
 
 class MaintenanceListCard extends HTMLElement {
   static getStubConfig() {
-    return { hide_ok: false, hide_when_empty: false, separate_items: false };
+    return {
+      hide_ok: false,
+      hide_due_soon: false,
+      hide_when_empty: false,
+      separate_items: false,
+    };
   }
 
   static async getConfigElement() {
@@ -531,6 +537,7 @@ class MaintenanceListCard extends HTMLElement {
   setConfig(config) {
     this._config = {
       hide_ok: false,
+      hide_due_soon: false,
       hide_when_empty: false,
       separate_items: false,
       ...(config || {}),
@@ -629,6 +636,8 @@ class MaintenanceListCard extends HTMLElement {
     let rows = entities.map((s) => this._toRow(s));
     this._totalCount = rows.length;
     if (this._config.hide_ok) rows = rows.filter((r) => r.status !== "ok");
+    if (this._config.hide_due_soon)
+      rows = rows.filter((r) => r.status !== "due_soon");
     this._hiddenCount = this._totalCount - rows.length;
     rows.sort((a, b) => {
       const ra = STATE_RANK[a.status] ?? 3;
@@ -960,6 +969,7 @@ class MaintenanceListCard extends HTMLElement {
 
 const LIST_EDITOR_SCHEMA = [
   { name: "hide_ok", selector: { boolean: {} } },
+  { name: "hide_due_soon", selector: { boolean: {} } },
   { name: "hide_when_empty", selector: { boolean: {} } },
   { name: "separate_items", selector: { boolean: {} } },
   { name: "confirm", selector: { boolean: {} } },
@@ -999,6 +1009,7 @@ class MaintenanceListCardEditor extends HTMLElement {
     this._form.hass = this._hass;
     this._form.data = {
       hide_ok: this._config.hide_ok ?? false,
+      hide_due_soon: this._config.hide_due_soon ?? false,
       hide_when_empty: this._config.hide_when_empty ?? false,
       separate_items: this._config.separate_items ?? false,
       confirm: this._config.confirm ?? true,

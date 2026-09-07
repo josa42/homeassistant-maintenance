@@ -179,6 +179,7 @@
       "entity": "Maintenance tracker",
       "confirm": "Confirm before mark done",
       "hide_ok": "Hide OK trackers",
+      "hide_due_soon": "Hide due soon trackers",
       "hide_when_empty": "Hide card when empty",
       "separate_items": "Render each item as its own card"
     }

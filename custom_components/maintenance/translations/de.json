@@ -179,6 +179,7 @@
       "entity": "Wartungstracker",
       "confirm": "Vor dem Erledigen bestätigen",
       "hide_ok": "OK-Tracker ausblenden",
+      "hide_due_soon": "Bald fällige Tracker ausblenden",
       "hide_when_empty": "Karte ausblenden, wenn leer",
       "separate_items": "Jeden Eintrag als eigene Karte anzeigen"
     }
