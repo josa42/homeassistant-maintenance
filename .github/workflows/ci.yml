@@ -1,0 +1,14 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Weekly, Sunday 00:00 UTC: catches upstream Home Assistant breakage without
+  # a run a day on a repo that goes quiet for months at a time.
+  schedule:
+    - cron: "0 0 * * 0"
+
+jobs:
+  ci:
+    uses: josa42/gha-workflows/.github/workflows/ha-integration.yml@main
