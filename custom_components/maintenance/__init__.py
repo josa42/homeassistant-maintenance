@@ -11,6 +11,7 @@ from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.util import dt as dt_util
 
@@ -20,6 +21,7 @@ from .const import (
     CONF_LAST_DONE,
     CONF_THRESHOLD,
     CONF_THRESHOLD_UNIT,
+    DOMAIN,
     UNIT_DAYS,
     UNIT_HOURS,
 )
@@ -31,6 +33,8 @@ PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BUTTON]
 
 CARD_URL_PATH = "/maintenance-tracker/maintenance-card.js"
 CARD_VERSION = "1.0.1"
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 @dataclass
