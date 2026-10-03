@@ -165,6 +165,6 @@ caches. Users must:
 
 ## Release
 
-`gh workflow run release -f version=<version|major|minor|patch>` runs the
+`make release` (or `make release VERSION=<version|major|minor|patch>`) runs the
 release workflow: CI, then it bumps `manifest.json` and `CARD_VERSION` in
 `__init__.py` and `maintenance-card.js`, commits, tags, pushes and publishes.
