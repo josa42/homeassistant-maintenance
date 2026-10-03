@@ -9,5 +9,5 @@
   "integration_type": "helper",
   "config_flow": true,
   "requirements": [],
-  "dependencies": []
+  "dependencies": ["frontend", "http"]
 }
