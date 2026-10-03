@@ -106,6 +106,8 @@ caches. Users must:
 - Everything user-facing goes through `hass.localize(...)` against
   `component.maintenance.*`. Both `en` and `de` translation files must stay
   in sync — `strings.json` is copied to `translations/en.json` on each edit.
+- Card strings live under `common` as flat `card_*` keys. hassfest only allows
+  known top-level keys in `strings.json`, and `common` takes no nesting.
 - Card JS has an `EN_FALLBACK` map for the rare case `hass.localize` returns
   falsy before HA finishes booting.
 - Never build user-visible strings with template literals; use `_t(hass, key, params)`

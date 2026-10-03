@@ -161,27 +161,23 @@
       "description": "Setzt den Zähler zurück, ohne das Datum der letzten Erledigung zu ändern."
     }
   },
-  "card": {
-    "confirm_title": "Wartung",
-    "confirm_body": "„{name}“ als erledigt markieren?",
-    "confirm_ok": "Als erledigt markieren",
-    "confirm_cancel": "Abbrechen",
-    "mark_done_action": "Als erledigt markieren",
-    "empty_no_trackers": "Keine Wartungstracker konfiguriert.",
-    "empty_all_ok_one": "Nichts fällig — 1 Tracker ist auf dem neuesten Stand.",
-    "empty_all_ok_other": "Nichts fällig — alle {count} Tracker sind auf dem neuesten Stand.",
-    "empty_hidden": "Nichts fällig — diese Karte wird ausgeblendet.",
-    "units": {
-      "uses_one": "Nutzung",
-      "uses_other": "Nutzungen"
-    },
-    "editor": {
-      "entity": "Wartungstracker",
-      "confirm": "Vor dem Erledigen bestätigen",
-      "hide_ok": "OK-Tracker ausblenden",
-      "hide_due_soon": "Bald fällige Tracker ausblenden",
-      "hide_when_empty": "Karte ausblenden, wenn leer",
-      "separate_items": "Jeden Eintrag als eigene Karte anzeigen"
-    }
+  "common": {
+    "card_confirm_title": "Wartung",
+    "card_confirm_body": "„{name}“ als erledigt markieren?",
+    "card_confirm_ok": "Als erledigt markieren",
+    "card_confirm_cancel": "Abbrechen",
+    "card_mark_done_action": "Als erledigt markieren",
+    "card_empty_no_trackers": "Keine Wartungstracker konfiguriert.",
+    "card_empty_all_ok_one": "Nichts fällig — 1 Tracker ist auf dem neuesten Stand.",
+    "card_empty_all_ok_other": "Nichts fällig — alle {count} Tracker sind auf dem neuesten Stand.",
+    "card_empty_hidden": "Nichts fällig — diese Karte wird ausgeblendet.",
+    "card_unit_uses_one": "Nutzung",
+    "card_unit_uses_other": "Nutzungen",
+    "card_editor_entity": "Wartungstracker",
+    "card_editor_confirm": "Vor dem Erledigen bestätigen",
+    "card_editor_hide_ok": "OK-Tracker ausblenden",
+    "card_editor_hide_due_soon": "Bald fällige Tracker ausblenden",
+    "card_editor_hide_when_empty": "Karte ausblenden, wenn leer",
+    "card_editor_separate_items": "Jeden Eintrag als eigene Karte anzeigen"
   }
 }

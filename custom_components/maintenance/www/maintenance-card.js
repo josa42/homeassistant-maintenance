@@ -22,27 +22,27 @@ const SECONDS_PER_UNIT = {
 };
 
 const EN_FALLBACK = {
-  "component.maintenance.card.confirm_title": "Maintenance",
-  "component.maintenance.card.confirm_body": 'Mark "{name}" as done?',
-  "component.maintenance.card.confirm_ok": "Mark done",
-  "component.maintenance.card.confirm_cancel": "Cancel",
-  "component.maintenance.card.mark_done_action": "Mark done",
-  "component.maintenance.card.empty_no_trackers":
+  "component.maintenance.common.card_confirm_title": "Maintenance",
+  "component.maintenance.common.card_confirm_body": 'Mark "{name}" as done?',
+  "component.maintenance.common.card_confirm_ok": "Mark done",
+  "component.maintenance.common.card_confirm_cancel": "Cancel",
+  "component.maintenance.common.card_mark_done_action": "Mark done",
+  "component.maintenance.common.card_empty_no_trackers":
     "No maintenance trackers configured.",
-  "component.maintenance.card.empty_all_ok_one":
+  "component.maintenance.common.card_empty_all_ok_one":
     "Nothing due — 1 tracker is up to date.",
-  "component.maintenance.card.empty_all_ok_other":
+  "component.maintenance.common.card_empty_all_ok_other":
     "Nothing due — all {count} trackers are up to date.",
-  "component.maintenance.card.empty_hidden":
+  "component.maintenance.common.card_empty_hidden":
     "Nothing due — this card is hidden.",
-  "component.maintenance.card.units.uses_one": "use",
-  "component.maintenance.card.units.uses_other": "uses",
-  "component.maintenance.card.editor.entity": "Maintenance tracker",
-  "component.maintenance.card.editor.confirm": "Confirm before mark done",
-  "component.maintenance.card.editor.hide_ok": "Hide OK trackers",
-  "component.maintenance.card.editor.hide_due_soon": "Hide due soon trackers",
-  "component.maintenance.card.editor.hide_when_empty": "Hide card when empty",
-  "component.maintenance.card.editor.separate_items":
+  "component.maintenance.common.card_unit_uses_one": "use",
+  "component.maintenance.common.card_unit_uses_other": "uses",
+  "component.maintenance.common.card_editor_entity": "Maintenance tracker",
+  "component.maintenance.common.card_editor_confirm": "Confirm before mark done",
+  "component.maintenance.common.card_editor_hide_ok": "Hide OK trackers",
+  "component.maintenance.common.card_editor_hide_due_soon": "Hide due soon trackers",
+  "component.maintenance.common.card_editor_hide_when_empty": "Hide card when empty",
+  "component.maintenance.common.card_editor_separate_items":
     "Render each item as its own card",
   "component.maintenance.entity.sensor.tracker.state.ok": "OK",
   "component.maintenance.entity.sensor.tracker.state.due_soon": "Due soon",
@@ -70,8 +70,8 @@ function _fmtDuration(hass, value, unit) {
     const rounded = Math.round(value);
     const key =
       rounded === 1
-        ? "component.maintenance.card.units.uses_one"
-        : "component.maintenance.card.units.uses_other";
+        ? "component.maintenance.common.card_unit_uses_one"
+        : "component.maintenance.common.card_unit_uses_other";
     return `${nfInt.format(rounded)} ${_t(hass, key)}`;
   }
 
@@ -171,8 +171,8 @@ function _fmtProgress(hass, counter, threshold, unit) {
     const nf = new Intl.NumberFormat(lang, { maximumFractionDigits: 0 });
     const key =
       tRounded === 1
-        ? "component.maintenance.card.units.uses_one"
-        : "component.maintenance.card.units.uses_other";
+        ? "component.maintenance.common.card_unit_uses_one"
+        : "component.maintenance.common.card_unit_uses_other";
     return `${nf.format(cRounded)} / ${nf.format(tRounded)} ${_t(hass, key)}`;
   }
 
@@ -440,7 +440,7 @@ class MaintenanceCard extends HTMLElement {
     iconEl.setAttribute("role", "button");
     iconEl.setAttribute("tabindex", "0");
     iconEl.style.cursor = "pointer";
-    iconEl.title = _t(this._hass, "component.maintenance.card.mark_done_action");
+    iconEl.title = _t(this._hass, "component.maintenance.common.card_mark_done_action");
     const markDone = (e) => {
       e.stopPropagation();
       _markDone(this, this._hass, this._config.entity, this._config.confirm ?? true);
@@ -493,7 +493,7 @@ class MaintenanceCardEditor extends HTMLElement {
       const form = document.createElement("ha-form");
       form.schema = EDITOR_SCHEMA;
       form.computeLabel = (s) =>
-        _t(this._hass, `component.maintenance.card.editor.${s.name}`) || s.name;
+        _t(this._hass, `component.maintenance.common.card_editor_${s.name}`) || s.name;
       form.addEventListener("value-changed", (e) => {
         this._config = { ...this._config, ...e.detail.value };
         this.dispatchEvent(
@@ -685,15 +685,15 @@ class MaintenanceListCard extends HTMLElement {
       if (this._config.hide_when_empty) {
         // Only reachable in the editor — outside it the card is collapsed. Say
         // that it is hidden rather than implying it renders like this.
-        msg = _t(this._hass, "component.maintenance.card.empty_hidden");
+        msg = _t(this._hass, "component.maintenance.common.card_empty_hidden");
       } else if (this._hiddenCount > 0) {
         const key =
           this._hiddenCount === 1
-            ? "component.maintenance.card.empty_all_ok_one"
-            : "component.maintenance.card.empty_all_ok_other";
+            ? "component.maintenance.common.card_empty_all_ok_one"
+            : "component.maintenance.common.card_empty_all_ok_other";
         msg = _t(this._hass, key, { count: this._hiddenCount });
       } else {
-        msg = _t(this._hass, "component.maintenance.card.empty_no_trackers");
+        msg = _t(this._hass, "component.maintenance.common.card_empty_no_trackers");
       }
       this._els.list.innerHTML = `<div class="empty">${_escape(msg)}</div>`;
       this._scheduleTick();
@@ -701,7 +701,7 @@ class MaintenanceListCard extends HTMLElement {
     }
 
     const markDoneLabel = _escape(
-      _t(this._hass, "component.maintenance.card.mark_done_action")
+      _t(this._hass, "component.maintenance.common.card_mark_done_action")
     );
     this._els.list.innerHTML = rows
       .map(
@@ -992,7 +992,7 @@ class MaintenanceListCardEditor extends HTMLElement {
       const form = document.createElement("ha-form");
       form.schema = LIST_EDITOR_SCHEMA;
       form.computeLabel = (s) =>
-        _t(this._hass, `component.maintenance.card.editor.${s.name}`) || s.name;
+        _t(this._hass, `component.maintenance.common.card_editor_${s.name}`) || s.name;
       form.addEventListener("value-changed", (e) => {
         this._config = { ...this._config, ...e.detail.value };
         this.dispatchEvent(
@@ -1059,13 +1059,13 @@ async function _markDone(dispatchEl, hass, entityId, confirmOpt) {
     const msg =
       typeof confirmOpt === "string"
         ? confirmOpt
-        : _t(hass, "component.maintenance.card.confirm_body", { name });
+        : _t(hass, "component.maintenance.common.card_confirm_body", { name });
     const ok = await _confirm(
       dispatchEl,
       msg,
-      _t(hass, "component.maintenance.card.confirm_title"),
-      _t(hass, "component.maintenance.card.confirm_ok"),
-      _t(hass, "component.maintenance.card.confirm_cancel")
+      _t(hass, "component.maintenance.common.card_confirm_title"),
+      _t(hass, "component.maintenance.common.card_confirm_ok"),
+      _t(hass, "component.maintenance.common.card_confirm_cancel")
     );
     if (!ok) return;
   }

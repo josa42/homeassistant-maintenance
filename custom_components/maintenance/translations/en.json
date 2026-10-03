@@ -161,27 +161,23 @@
       "description": "Reset the counter without changing the last-done date."
     }
   },
-  "card": {
-    "confirm_title": "Maintenance",
-    "confirm_body": "Mark \"{name}\" as done?",
-    "confirm_ok": "Mark done",
-    "confirm_cancel": "Cancel",
-    "mark_done_action": "Mark done",
-    "empty_no_trackers": "No maintenance trackers configured.",
-    "empty_all_ok_one": "Nothing due — 1 tracker is up to date.",
-    "empty_all_ok_other": "Nothing due — all {count} trackers are up to date.",
-    "empty_hidden": "Nothing due — this card is hidden.",
-    "units": {
-      "uses_one": "use",
-      "uses_other": "uses"
-    },
-    "editor": {
-      "entity": "Maintenance tracker",
-      "confirm": "Confirm before mark done",
-      "hide_ok": "Hide OK trackers",
-      "hide_due_soon": "Hide due soon trackers",
-      "hide_when_empty": "Hide card when empty",
-      "separate_items": "Render each item as its own card"
-    }
+  "common": {
+    "card_confirm_title": "Maintenance",
+    "card_confirm_body": "Mark \"{name}\" as done?",
+    "card_confirm_ok": "Mark done",
+    "card_confirm_cancel": "Cancel",
+    "card_mark_done_action": "Mark done",
+    "card_empty_no_trackers": "No maintenance trackers configured.",
+    "card_empty_all_ok_one": "Nothing due — 1 tracker is up to date.",
+    "card_empty_all_ok_other": "Nothing due — all {count} trackers are up to date.",
+    "card_empty_hidden": "Nothing due — this card is hidden.",
+    "card_unit_uses_one": "use",
+    "card_unit_uses_other": "uses",
+    "card_editor_entity": "Maintenance tracker",
+    "card_editor_confirm": "Confirm before mark done",
+    "card_editor_hide_ok": "Hide OK trackers",
+    "card_editor_hide_due_soon": "Hide due soon trackers",
+    "card_editor_hide_when_empty": "Hide card when empty",
+    "card_editor_separate_items": "Render each item as its own card"
   }
 }
