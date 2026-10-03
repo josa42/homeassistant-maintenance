@@ -1,4 +1,4 @@
-const CARD_VERSION = "1.0.1";
+const CARD_VERSION = "1.1.0";
 
 const STATE_COLOR = {
   ok: "var(--success-color, #4caf50)",
