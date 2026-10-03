@@ -12,6 +12,8 @@ Each **tracker** is one maintenance job (change oven filter, clean washer, repla
 | `entity_on_duration` | A target entity has spent the configured duration in the "on" state since it was last done |
 | `entity_usage_count` | A target entity has transitioned `from → to` state N times since it was last done |
 | `recurring_date` | A specific calendar date — every Nth of the month, or every Nth of a specific month (e.g. every 1st of October) |
+| `template_boolean` | A Jinja template renders a truthy value |
+| `template_numeric` | A Jinja template renders a number that reaches the configured threshold |
 
 Durations (interval / on-duration threshold) accept **minutes, hours, days, weeks, months, or years**. Months and years are computed as 30.4375 and 365.25 days respectively.
 
@@ -44,7 +46,50 @@ sensor.oven_cleaning:
     criterion: entity_on_duration
     threshold: 500
     warn_threshold_percent: 90
+    silenced: false
 ```
+
+## Template criteria
+
+Template trackers react to any state in Home Assistant. Marking one done silences it: it stays `ok` until the condition is no longer active (boolean: the template renders false; numeric: the value drops below the warn threshold) **and** the optional cooldown has passed. While silenced, the `silenced` attribute is `true`.
+
+The cooldown is meant for seasonal tasks that should fire once per season rather than on every change of the condition.
+
+### Example: turn off the outside water before frost
+
+Weather entities don't expose their forecast as an attribute, so a template can't read it directly. Add a trigger-based template sensor to `configuration.yaml` that fetches the forecast every hour and keeps the lowest temperature of the next 7 days:
+
+```yaml
+template:
+  - triggers:
+      - trigger: time_pattern
+        hours: "/1"
+      - trigger: homeassistant
+        event: start
+    actions:
+      - action: weather.get_forecasts
+        target:
+          entity_id: weather.home
+        data:
+          type: daily
+        response_variable: forecast
+    sensor:
+      - name: Frost forecast min temp
+        unique_id: frost_forecast_min_temp
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state: >
+          {{ forecast['weather.home'].forecast[:7]
+             | map(attribute='templow') | reject('none') | min }}
+```
+
+Pick a weather entity whose daily forecast covers at least 7 days. Then add a `template_boolean` tracker with this template and a cooldown of about 150 days:
+
+```jinja
+{{ states('sensor.frost_forecast_min_temp') | float(99) < 0 }}
+```
+
+The tracker goes overdue once frost is forecast. After you mark it done, it stays quiet for the rest of the winter.
 
 ## Lovelace card
 
