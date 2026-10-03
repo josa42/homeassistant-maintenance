@@ -18,6 +18,8 @@ from homeassistant.helpers import selector
 import voluptuous as vol
 
 from .const import (
+    CONF_COOLDOWN,
+    CONF_COOLDOWN_UNIT,
     CONF_CRITERION,
     CONF_DAY_OF_MONTH,
     CONF_FROM_STATE,
@@ -40,6 +42,7 @@ from .const import (
     CRITERION_TEMPLATE_BOOLEAN,
     CRITERION_TEMPLATE_NUMERIC,
     CRITERION_TIME_ELAPSED,
+    DEFAULT_COOLDOWN_UNIT,
     DEFAULT_FROM_STATE,
     DEFAULT_INTERVAL_UNIT,
     DEFAULT_ON_STATE,
@@ -66,6 +69,9 @@ _DURATION_UNIT_SELECTOR = selector.SelectSelector(
 )
 _LAST_DONE_SELECTOR = selector.DateTimeSelector()
 _TEMPLATE_SELECTOR = selector.TemplateSelector()
+_COOLDOWN_SELECTOR = selector.NumberSelector(
+    selector.NumberSelectorConfig(min=1, step=1, mode=selector.NumberSelectorMode.BOX)
+)
 
 _CRITERION_SCHEMAS: dict[str, vol.Schema] = {
     CRITERION_TIME_ELAPSED: vol.Schema(
@@ -130,6 +136,8 @@ _CRITERION_SCHEMAS: dict[str, vol.Schema] = {
         {
             vol.Required(CONF_NAME): _NAME_SELECTOR,
             vol.Required(CONF_TEMPLATE): _TEMPLATE_SELECTOR,
+            vol.Optional(CONF_COOLDOWN): _COOLDOWN_SELECTOR,
+            vol.Required(CONF_COOLDOWN_UNIT, default=DEFAULT_COOLDOWN_UNIT): _DURATION_UNIT_SELECTOR,
             vol.Optional(CONF_LAST_DONE): _LAST_DONE_SELECTOR,
         }
     ),
@@ -141,6 +149,8 @@ _CRITERION_SCHEMAS: dict[str, vol.Schema] = {
                 selector.NumberSelectorConfig(min=0, step=0.1, mode=selector.NumberSelectorMode.BOX)
             ),
             vol.Required(CONF_WARN_THRESHOLD_PERCENT, default=DEFAULT_WARN_THRESHOLD_PERCENT): _WARN_SELECTOR,
+            vol.Optional(CONF_COOLDOWN): _COOLDOWN_SELECTOR,
+            vol.Required(CONF_COOLDOWN_UNIT, default=DEFAULT_COOLDOWN_UNIT): _DURATION_UNIT_SELECTOR,
             vol.Optional(CONF_LAST_DONE): _LAST_DONE_SELECTOR,
         }
     ),

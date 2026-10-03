@@ -79,6 +79,8 @@ CONF_DAY_OF_MONTH: Final = "day_of_month"
 CONF_MONTH_OF_YEAR: Final = "month_of_year"
 CONF_LAST_DONE: Final = "last_done"
 CONF_TEMPLATE: Final = "template"
+CONF_COOLDOWN: Final = "cooldown"
+CONF_COOLDOWN_UNIT: Final = "cooldown_unit"
 
 MONTH_ANY: Final = "any"
 
@@ -88,6 +90,7 @@ DEFAULT_FROM_STATE: Final = "off"
 DEFAULT_TO_STATE: Final = "on"
 DEFAULT_INTERVAL_UNIT: Final = UNIT_DAYS
 DEFAULT_THRESHOLD_UNIT: Final = UNIT_HOURS
+DEFAULT_COOLDOWN_UNIT: Final = UNIT_DAYS
 
 EVENT_MAINTENANCE_COMPLETED: Final = "maintenance_completed"
 

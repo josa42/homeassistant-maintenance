@@ -54,21 +54,25 @@
       },
       "template_boolean": {
         "title": "Template (Boolean)",
-        "description": "Gib ein Jinja-Template ein. Wenn es einen wahren Wert liefert, wird der Tracker als überfällig markiert.",
+        "description": "Gib ein Jinja-Template ein. Wenn es einen wahren Wert liefert, wird der Tracker als überfällig markiert. Als erledigt markiert, bleibt er stumm, bis das Template wieder falsch liefert und die optionale Sperrzeit abgelaufen ist.",
         "data": {
           "name": "Name",
           "template": "Template",
+          "cooldown": "Sperrzeit nach Erledigung (optional)",
+          "cooldown_unit": "Einheit der Sperrzeit",
           "last_done": "Zuletzt erledigt (optional)"
         }
       },
       "template_numeric": {
         "title": "Template (numerisch)",
-        "description": "Gib ein Jinja-Template ein, das eine Zahl liefert. Fortschritt = Zähler / Schwellenwert.",
+        "description": "Gib ein Jinja-Template ein, das eine Zahl liefert. Fortschritt = Zähler / Schwellenwert. Als erledigt markiert, bleibt er stumm, bis der Wert wieder unter die Warnschwelle fällt und die optionale Sperrzeit abgelaufen ist.",
         "data": {
           "name": "Name",
           "template": "Template",
           "threshold": "Schwellenwert",
           "warn_threshold_percent": "Warnschwelle (%)",
+          "cooldown": "Sperrzeit nach Erledigung (optional)",
+          "cooldown_unit": "Einheit der Sperrzeit",
           "last_done": "Zuletzt erledigt (optional)"
         }
       }
@@ -140,7 +144,8 @@
           "progress": { "name": "Fortschritt" },
           "criterion": { "name": "Kriterium" },
           "threshold": { "name": "Schwellenwert" },
-          "warn_threshold_percent": { "name": "Warnschwelle" }
+          "warn_threshold_percent": { "name": "Warnschwelle" },
+          "silenced": { "name": "Stummgeschaltet" }
         }
       }
     }

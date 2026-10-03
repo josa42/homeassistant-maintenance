@@ -54,21 +54,25 @@
       },
       "template_boolean": {
         "title": "Template (boolean)",
-        "description": "Enter a Jinja template. When it renders a truthy value, the tracker is marked overdue.",
+        "description": "Enter a Jinja template. When it renders a truthy value, the tracker is marked overdue. Marking it done silences it until the template renders false again and the optional cooldown has passed.",
         "data": {
           "name": "Name",
           "template": "Template",
+          "cooldown": "Cooldown after done (optional)",
+          "cooldown_unit": "Cooldown unit",
           "last_done": "Last done (optional)"
         }
       },
       "template_numeric": {
         "title": "Template (numeric)",
-        "description": "Enter a Jinja template that renders a number. Progress is counter / threshold.",
+        "description": "Enter a Jinja template that renders a number. Progress is counter / threshold. Marking it done silences it until the value drops below the warn threshold again and the optional cooldown has passed.",
         "data": {
           "name": "Name",
           "template": "Template",
           "threshold": "Threshold",
           "warn_threshold_percent": "Warn threshold (%)",
+          "cooldown": "Cooldown after done (optional)",
+          "cooldown_unit": "Cooldown unit",
           "last_done": "Last done (optional)"
         }
       }
@@ -140,7 +144,8 @@
           "progress": { "name": "Progress" },
           "criterion": { "name": "Criterion" },
           "threshold": { "name": "Threshold" },
-          "warn_threshold_percent": { "name": "Warn threshold" }
+          "warn_threshold_percent": { "name": "Warn threshold" },
+          "silenced": { "name": "Silenced" }
         }
       }
     }

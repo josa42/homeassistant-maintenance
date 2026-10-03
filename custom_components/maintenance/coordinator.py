@@ -21,6 +21,8 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_COOLDOWN,
+    CONF_COOLDOWN_UNIT,
     CONF_CRITERION,
     CONF_DAY_OF_MONTH,
     CONF_FROM_STATE,
@@ -42,6 +44,7 @@ from .const import (
     CRITERION_TEMPLATE_BOOLEAN,
     CRITERION_TEMPLATE_NUMERIC,
     CRITERION_TIME_ELAPSED,
+    DEFAULT_COOLDOWN_UNIT,
     DEFAULT_FROM_STATE,
     DEFAULT_INTERVAL_UNIT,
     DEFAULT_ON_STATE,
@@ -76,6 +79,7 @@ class MaintenanceData:
     estimated_due_date: datetime | None
     criterion: str
     warn_threshold_percent: int
+    silenced: bool = False
 
     def as_attributes(self) -> dict[str, Any]:
         data = asdict(self)
@@ -94,6 +98,9 @@ class PersistedTracker:
     accumulated_seconds: float = 0.0
     usage_count: int = 0
     on_since: datetime | None = None
+    # Template criteria: set by mark_done, cleared once the condition is no
+    # longer active.
+    silenced: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -101,6 +108,7 @@ class PersistedTracker:
             "accumulated_seconds": self.accumulated_seconds,
             "usage_count": self.usage_count,
             "on_since": self.on_since.isoformat() if self.on_since else None,
+            "silenced": self.silenced,
         }
 
     @classmethod
@@ -112,6 +120,7 @@ class PersistedTracker:
             accumulated_seconds=float(data.get("accumulated_seconds") or 0.0),
             usage_count=int(data.get("usage_count") or 0),
             on_since=_parse_dt(data.get("on_since")),
+            silenced=bool(data.get("silenced", False)),
         )
 
 
@@ -526,6 +535,9 @@ class _TemplateCoordinatorBase(MaintenanceCoordinator):
     Subclasses implement `_compute()` using `self._latest_result`, which is
     kept up to date by HA's template tracker (re-renders whenever a
     dependent entity's state changes).
+
+    Marking done silences the tracker. It re-arms once the condition has
+    been inactive at least once and the optional cooldown has passed.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -533,6 +545,27 @@ class _TemplateCoordinatorBase(MaintenanceCoordinator):
         self.template = Template(self.config[CONF_TEMPLATE], self.hass)
         self._latest_result: Any = None
         self._template_track = None
+        cooldown = self.config.get(CONF_COOLDOWN)
+        unit = self.config.get(CONF_COOLDOWN_UNIT, DEFAULT_COOLDOWN_UNIT)
+        self.cooldown: timedelta | None = (
+            timedelta(seconds=float(cooldown) * UNIT_SECONDS[unit]) if cooldown else None
+        )
+
+    async def async_mark_done(self, when: datetime | None = None) -> None:
+        self.persisted.silenced = True
+        await super().async_mark_done(when)
+
+    def _is_silenced(self, condition_active: bool) -> bool:
+        persisted = self.persisted
+        if persisted.silenced and not condition_active:
+            persisted.silenced = False
+            self.store.mark_dirty()
+        if persisted.silenced:
+            return True
+        last_done = persisted.last_done_date
+        if self.cooldown is None or last_done is None:
+            return False
+        return dt_util.utcnow() < last_done + self.cooldown
 
     async def async_start(self) -> None:
         try:
@@ -573,6 +606,8 @@ class TemplateBooleanCoordinator(_TemplateCoordinatorBase):
 
     def _compute(self) -> MaintenanceData:
         is_due = self._truthy(self._latest_result)
+        silenced = self._is_silenced(is_due)
+        is_due = is_due and not silenced
         return MaintenanceData(
             state=STATE_OVERDUE if is_due else STATE_OK,
             counter=100.0 if is_due else 0.0,
@@ -583,6 +618,7 @@ class TemplateBooleanCoordinator(_TemplateCoordinatorBase):
             estimated_due_date=None,
             criterion=CRITERION_TEMPLATE_BOOLEAN,
             warn_threshold_percent=self.warn_threshold_percent,
+            silenced=silenced,
         )
 
 
@@ -599,8 +635,13 @@ class TemplateNumericCoordinator(_TemplateCoordinatorBase):
         except (TypeError, ValueError):
             counter = 0.0
         progress = (counter / self.threshold * 100) if self.threshold > 0 else 0.0
+        state = self._state_from_progress(progress)
+        silenced = self._is_silenced(state != STATE_OK)
+        if silenced:
+            state = STATE_OK
+            progress = 0.0
         return MaintenanceData(
-            state=self._state_from_progress(progress),
+            state=state,
             counter=round(counter, 2),
             counter_unit="",
             progress=round(progress, 1),
@@ -609,6 +650,7 @@ class TemplateNumericCoordinator(_TemplateCoordinatorBase):
             estimated_due_date=None,
             criterion=CRITERION_TEMPLATE_NUMERIC,
             warn_threshold_percent=self.warn_threshold_percent,
+            silenced=silenced,
         )
 
 

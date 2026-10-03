@@ -62,3 +62,36 @@ async def test_reacts_to_entity_state(hass):
     await hass.async_block_till_done()
     await coord.async_refresh()
     assert coord.data.state == STATE_OVERDUE
+
+
+async def test_mark_done_silences_until_back_to_ok(hass):
+    hass.states.async_set("sensor.hours", "12")
+    coord = await make_coordinator(
+        hass, "t5", _config("{{ states('sensor.hours') | float(0) }}", threshold=10, warn=90)
+    )
+    await coord.async_refresh()
+    assert coord.data.state == STATE_OVERDUE
+
+    await coord.async_mark_done()
+    assert coord.data.state == STATE_OK
+    assert coord.data.counter == 12
+    assert coord.data.progress == 0
+    assert coord.data.silenced is True
+
+    # Due soon still counts as active: stays silenced.
+    hass.states.async_set("sensor.hours", "9.5")
+    await hass.async_block_till_done()
+    await coord.async_refresh()
+    assert coord.data.state == STATE_OK
+    assert coord.data.silenced is True
+
+    hass.states.async_set("sensor.hours", "1")
+    await hass.async_block_till_done()
+    await coord.async_refresh()
+    assert coord.data.silenced is False
+
+    hass.states.async_set("sensor.hours", "11")
+    await hass.async_block_till_done()
+    await coord.async_refresh()
+    assert coord.data.state == STATE_OVERDUE
+    assert coord.data.progress == 110

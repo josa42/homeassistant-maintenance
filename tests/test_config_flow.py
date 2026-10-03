@@ -7,13 +7,18 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 
 from custom_components.maintenance.const import (
+    CONF_COOLDOWN,
+    CONF_COOLDOWN_UNIT,
     CONF_CRITERION,
     CONF_INTERVAL,
     CONF_INTERVAL_UNIT,
     CONF_NAME,
+    CONF_TEMPLATE,
     CONF_WARN_THRESHOLD_PERCENT,
+    CRITERION_TEMPLATE_BOOLEAN,
     CRITERION_TIME_ELAPSED,
     DOMAIN,
+    UNIT_DAYS,
     UNIT_MONTHS,
 )
 
@@ -70,3 +75,23 @@ async def test_multiple_trackers_allowed(hass: HomeAssistant) -> None:
             },
         )
         assert result["type"] == FlowResultType.CREATE_ENTRY
+
+
+async def test_template_flow_accepts_cooldown(hass: HomeAssistant) -> None:
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_CRITERION: CRITERION_TEMPLATE_BOOLEAN}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {
+            CONF_NAME: "Outside water",
+            CONF_TEMPLATE: "{{ false }}",
+            CONF_COOLDOWN: 150,
+        },
+    )
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_COOLDOWN] == 150
+    assert result["data"][CONF_COOLDOWN_UNIT] == UNIT_DAYS
