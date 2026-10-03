@@ -168,3 +168,5 @@ caches. Users must:
 `make release` (or `make release VERSION=<version|major|minor|patch>`) runs the
 release workflow: CI, then it bumps `manifest.json` and `CARD_VERSION` in
 `__init__.py` and `maintenance-card.js`, commits, tags, pushes and publishes.
+The workflow releases `origin/main`, so `make release` stops on unpushed or
+uncommitted changes.
