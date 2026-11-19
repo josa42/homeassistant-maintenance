@@ -19,11 +19,14 @@ Durations (interval / on-duration threshold) accept **minutes, hours, days, week
 
 ## Installation
 
-**HACS (recommended):** add this repository as a custom integration in HACS, then install *Maintenance Tracker*.
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=josa42&repository=homeassistant-maintenance&category=integration)
 
-**Manual:** copy `custom_components/maintenance` into your Home Assistant `config/custom_components/` directory.
+### Requirements
 
-Restart Home Assistant.
+- Home Assistant **2026.9.1** or newer
+
+[Manual installation](docs/manual_installation.md) covers adding the repository
+by hand and installing without HACS.
 
 ## Usage
 
